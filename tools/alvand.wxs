@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ساخت نصب‌کنندهٔ MSI برای Alvand Player.
+
+    چرا دستی، نه jpackage؟
+    هر دو نوع بستهٔ msi و exe در jpackage روی این محیط با خطای
+    «candle.exe … exited with ?? code» می‌شکنند. خودِ WiX 3.11.2 سالم است (با
+    اجرای مستقیم candle تأیید شد) ولی فایل bundle.wxf که jpackage تولید
+    می‌کند کامپایل نمی‌شود. به‌جای جنگیدن با آن، فایل‌های برنامه را با heat
+    فهرست می‌کنیم و خودمان MSI را می‌سازیم.
+
+    نسخه از tools/package-msi.ps1 با ‎-dProductVersion‎ داده می‌شود تا تنها یک
+    منبعِ حقیقت داشته باشیم (نام فایل MSI هم از همان می‌آید).
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <?define ProductName = "Alvand Player" ?>
+  <?define Manufacturer = "Alvand" ?>
+  <!--
+    UpgradeCode **هرگز نباید عوض شود**. این شناسهٔ ثابت تعیین می‌کند که نسخهٔ
+    جدید، همان برنامه است و باید روی نصب قبلی بنشیند. اگر این UUID را تغییر
+    دهید، نسخهٔ جدید کنار نسخهٔ قبلی نصب می‌شود و دو کپی برنامه خواهید داشت.
+
+    همین UUID در build.gradle.kts هم هست؛ اگر یکی را عوض کنید، دیگری را هم عوض کنید.
+  -->
+  <?define UpgradeCode = "8f0a2c14-6b3d-4f77-9d21-1c5e7a9b0d33" ?>
+
+  <!--
+    ProductCode عمداً دستی داده می‌شود، نه `*`.
+    با `*` هر بار که دوباره build می‌کنیم یک GUID تصادفی ساخته می‌شود، پس دو
+    فایل MSI با **یک نسخهٔ یکسان** دو محصول متفاوت می‌شوند و نصب دوم روی
+    اولی گیر می‌کند یا ناقص انجام می‌شود.
+
+    اسکریپت این شناسه را به‌صورت قطعی از روی UpgradeCode + شمارهٔ نسخه
+    (UUID v5) می‌سازد، یعنی:
+      - یک نسخهٔ ثابت ⇒ همیشه همان ProductCode ⇒ نصب مجدد درست کار می‌کند
+      - نسخهٔ جدید ⇒ ProductCode تازه ⇒ MajorUpgrade نسخهٔ قبلی را پاک می‌کند
+  -->
+  <Product Id="$(var.ProductCode)"
+           Name="$(var.ProductName)"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="$(var.ProductName)"
+             Manufacturer="$(var.Manufacturer)" />
+
+    <!--
+      ارتقا روی نسخهٔ قبلی: فایل‌ها و رجیستری قبلی پاک و جدید جایگزین می‌شوند.
+      AllowSameVersionUpgrades برای حالتی است که نسخهٔ تازه‌تری هنوز نصب نشده ولی
+      خودِ نسخه را دوباره می‌آوریم (مثلاً تنظیمات فرق کرده) — بدون آن، نصب دوباره
+      «همان محصول» حساب می‌شود و هیچ اتفاقی نمی‌افتد.
+      AllowDowngrades="no" جلوی برگشت به نسخهٔ کهنه را می‌گیرد.
+    -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  AllowDowngrades="no"
+                  Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="A newer version of $(var.ProductName) is already installed. Uninstall it first to go back." />
+
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      در WiX فقط یک ریشهٔ درخت مجاز است و Id آن باید TARGETDIR باشد؛ بقیهٔ
+      مسیرها زیرمجموعهٔ آن هستند.
+    -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="AlvandPlayer" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="$(var.ProductName)" />
+      </Directory>
+    </Directory>
+
+    <Property Id="ARPPRODUCTICON" Value="app\AlvandPlayer.exe" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Alvandcode/Alvand-Player" />
+
+    <Icon Id="TargetIcon" SourceFile="$(var.IconPath)" />
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcut" Guid="7C2E1B44-9A0D-4F31-8E2B-6D5A0C31F9A1">
+        <Shortcut Id="AppShortcut"
+                  Name="$(var.ProductName)"
+                  Description="$(var.ProductName)"
+                  Target="[INSTALLFOLDER]app\AlvandPlayer.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="TargetIcon" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!--
+      فایل‌های برنامه از خروجی heat می‌آید (ComponentGroup به نام AppFiles که
+      خود heat می‌سازد). آن قطعه هر فایل را با کلید رجیستریِ خودش ثبت می‌کند
+      تا Windows Installer هنگام uninstall دقیقاً همان فایل‌هایی را که نصب
+      کرده پاک کند.
+
+      اینجا فقط مسیر نصب را رجیستر می‌کنیم. توجه: نباید نام ComponentGroup
+      دیگری را هم AppFiles بگذاریم چون با خروجی heat تداخل می‌کند.
+    -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppRegistry" Guid="A4D6E8F1-3B72-4C95-8E1A-7F0B5C2D9E64">
+        <RegistryValue Root="HKLM"
+                       Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                       Name="InstallLocation"
+                       Type="string"
+                       Value="[INSTALLFOLDER]"
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!--
+      فایل‌انجکشن:ProgId صوتی Alvand. ثبت در HKCR (نصب perMachine) یعنی
+      «Open with → Alvand Player» برای پسوندهای پشتیبانی‌شده در دسترس است.
+      عمداً هیچ پسوندی را به‌صورت پیش‌فرض نمی‌دزدیم — فقط در دسترس می‌گذاریم.
+    -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppFileAssoc" Guid="B7E1C9A2-5D48-4A66-9F3C-2A1D84E6C7B5">
+        <ProgId Id="AlvandPlayer.Audio" Description="Alvand Player Audio" Icon="TargetIcon">
+          <Extension Id="mp3">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="wav">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="flac">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="ogg">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="oga">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="m4a">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+          <Extension Id="m4b">
+            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
+          </Extension>
+        </ProgId>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="$(var.ProductName)" Level="1" Absent="disallow">
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="AppRegistry" />
+      <ComponentRef Id="AppFileAssoc" />
+      <ComponentGroupRef Id="AppFiles" />
+    </Feature>
+
+    <UIRef Id="WixUI_InstallDir" />
+  </Product>
+</Wix>

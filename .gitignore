@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+local.properties
+
+# سیستم‌عامل
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# خروجی بسته‌بندی
+out/
+*.msi
+*.exe
+*.msix
+
+# لاگ و فایل موقت
+*.log
+*.tmp
