@@ -66,6 +66,13 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!--
+      متن مجوز صفحهٔ License Agreement — متن MIT خودمان، نه LoremIpsum پیش‌فرض.
+      خطای 2819 صفحهٔ مجوز معمولاً با محلی RTL ویندوز و متن پیش‌فرض رخ می‌دهد؛
+      متن سادهٔ ASCII خالص (LTR) جایگزین شده است.
+    -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicensePath)" />
+
+    <!--
       در WiX فقط یک ریشهٔ درخت مجاز است و Id آن باید TARGETDIR باشد؛ بقیهٔ
       مسیرها زیرمجموعهٔ آن هستند.
     -->
@@ -78,7 +85,7 @@
       </Directory>
     </Directory>
 
-    <Property Id="ARPPRODUCTICON" Value="app\AlvandPlayer.exe" />
+    <Property Id="ARPPRODUCTICON" Value="TargetIcon" />
     <Property Id="ARPHELPLINK" Value="https://github.com/Alvandcode/Alvand-Player" />
 
     <Icon Id="TargetIcon" SourceFile="$(var.IconPath)" />
@@ -88,7 +95,7 @@
         <Shortcut Id="AppShortcut"
                   Name="$(var.ProductName)"
                   Description="$(var.ProductName)"
-                  Target="[INSTALLFOLDER]app\AlvandPlayer.exe"
+                  Target="[INSTALLFOLDER]AlvandPlayer.exe"
                   WorkingDirectory="INSTALLFOLDER"
                   Icon="TargetIcon" />
         <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
@@ -122,35 +129,32 @@
     </DirectoryRef>
 
     <!--
-      فایل‌انجکشن:ProgId صوتی Alvand. ثبت در HKCR (نصب perMachine) یعنی
-      «Open with → Alvand Player» برای پسوندهای پشتیبانی‌شده در دسترس است.
-      عمداً هیچ پسوندی را به‌صورت پیش‌فرض نمی‌دزدیم — فقط در دسترس می‌گذاریم.
+      فایل‌انجکشن: ثبت ProgId صوتی Alvand با RegistryValue مستقیم (HKLM\Software\Classes).
+      عمداً هیچ پسوندی به‌عنوان پیش‌فرض دزدیده نمی‌شود — با OpenWithProgids فقط
+      در منوی «Open with» در دسترس می‌گذاریم تا کاربر خودش انتخاب کند.
     -->
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="AppFileAssoc" Guid="B7E1C9A2-5D48-4A66-9F3C-2A1D84E6C7B5">
-        <ProgId Id="AlvandPlayer.Audio" Description="Alvand Player Audio" Icon="TargetIcon">
-          <Extension Id="mp3">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="wav">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="flac">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="ogg">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="oga">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="m4a">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-          <Extension Id="m4b">
-            <Verb Id="open" Command="&amp;Open" Argument='&quot;%1&quot;' />
-          </Extension>
-        </ProgId>
+        <RegistryValue Root="HKLM" Key="Software\Classes\AlvandPlayer.Audio"
+                       Value="Alvand Player Audio" Type="string" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\AlvandPlayer.Audio\DefaultIcon"
+                       Value="[INSTALLFOLDER]AlvandPlayer.exe,0" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\AlvandPlayer.Audio\shell\open\command"
+                       Value='"[INSTALLFOLDER]AlvandPlayer.exe" "%1"' Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.mp3\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.wav\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.flac\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.ogg\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.oga\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.m4a\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.m4b\OpenWithProgids"
+                       Name="AlvandPlayer.Audio" Value="" Type="string" />
       </Component>
     </DirectoryRef>
 
@@ -161,6 +165,13 @@
       <ComponentGroupRef Id="AppFiles" />
     </Feature>
 
+    <!--
+      UI: پیش‌فرض ویزاردها (شامل صفحهٔ مجوز MIT). اگر متغیر NoUI تعریف شود،
+      بدون هیچ ویزاردی ساخته می‌شود — دابل‌کلیک فقط UAC + نوار پیشرفت؛
+      برای دور زدن باگ‌های UI ویندوز اینستالر (مثل 2819).
+    -->
+    <?ifndef NoUI?>
     <UIRef Id="WixUI_InstallDir" />
+    <?endif?>
   </Product>
 </Wix>

@@ -10,6 +10,7 @@ enum class Screen {
     DISCOVER,
     RADIO,
     EQUALIZER,
+    EFFECTS,
     VISUALIZER,
     SETTINGS,
 }

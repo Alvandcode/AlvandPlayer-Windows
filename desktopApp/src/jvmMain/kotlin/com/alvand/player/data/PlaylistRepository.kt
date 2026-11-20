@@ -31,6 +31,8 @@ class PlaylistRepository(
 
     fun observeRecent(limit: Int = 50): Flow<List<PlayHistoryEntity>> = dao.observeRecent(limit)
 
+    fun observeMostPlayed(limit: Int = 20): Flow<List<PlayHistoryEntity>> = dao.observeMostPlayed(limit)
+
     fun createPlaylist(name: String): Long {
         val clean = name.trim().take(60)
         require(clean.isNotBlank()) { "empty name" }

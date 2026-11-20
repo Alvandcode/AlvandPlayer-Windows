@@ -3,9 +3,12 @@ package com.alvand.player
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -14,9 +17,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -51,6 +56,11 @@ import androidx.compose.ui.window.rememberWindowState
 import com.alvand.player.ui.components.AppTitleBar
 import com.alvand.player.ui.components.ResizeHandles
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -64,6 +74,7 @@ import com.alvand.player.library.DroppedMediaClassifier
 import com.alvand.player.library.LibraryRoots
 import com.alvand.player.library.LibraryStore
 import com.alvand.player.library.ScanState
+import com.alvand.player.library.TagWriter
 import com.alvand.player.library.TagReader
 import com.alvand.player.lyrics.LyricsRepository
 import com.alvand.player.model.Song
@@ -83,7 +94,9 @@ import com.alvand.player.system.MediaKeys
 import com.alvand.player.system.SingleInstance
 import com.alvand.player.system.SystemTheme
 import com.alvand.player.system.TrayController
+import com.alvand.player.system.showSplash
 import com.alvand.player.ui.shell.AppShell
+import com.alvand.player.ui.shell.MiniPlayerWindow
 import com.alvand.player.ui.shell.Screen
 import com.alvand.player.ui.shell.matchSearch
 import com.alvand.player.ui.components.JumpToTimeDialog
@@ -91,6 +104,7 @@ import com.alvand.player.ui.components.LyricsSheet
 import com.alvand.player.ui.components.SongPropertiesDialog
 import com.alvand.player.ui.screens.DiscoverPage
 import com.alvand.player.ui.screens.EqualizerPage
+import com.alvand.player.ui.screens.EffectsPage
 import com.alvand.player.ui.screens.HomeScreen
 import com.alvand.player.ui.screens.LibraryPage
 import com.alvand.player.ui.screens.PlaylistsPage
@@ -157,10 +171,23 @@ private fun keyToToken(event: KeyEvent): String? {
 private class AppController {
     val windowVisible = mutableStateOf(true)
     val quitRequested = mutableStateOf(false)
+    /** وقتی پنجرهٔ اصلی minimize می‌شود، پنجرهٔ کوچک مینی‌پلیر گوشهٔ صفحه باز می‌شود */
+    val miniVisible = mutableStateOf(false)
+    /** یک‌بارِک در اولین نمایش پنجرهٔ اصلی — اسپلش را می‌بندد */
+    var onWindowShown: (() -> Unit)? = null
     var window: AwtWindow? = null
         private set
 
-    fun attach(w: AwtWindow) { window = w }
+    fun attach(w: AwtWindow) {
+        window = w
+        w.addComponentListener(object : java.awt.event.ComponentAdapter() {
+            override fun componentShown(e: java.awt.event.ComponentEvent) {
+                w.removeComponentListener(this)
+                onWindowShown?.invoke()
+                onWindowShown = null
+            }
+        })
+    }
 
     fun showWindow() {
         window?.let {
@@ -192,16 +219,33 @@ fun main(args: Array<String>) {
     }
 
     val settings = SettingsStore()
+
+    // اسپلش سبک: همین لحظه دیده می‌شود تا فاصلهٔ تا اولین فریم Compose
+    // «برنامه هنگ کرده» به نظر نرسد؛ با نمایش پنجرهٔ اصلی می‌رود
+    val splash = showSplash(APP_NAME)
+    // ولوم مشترک بین پنجرهٔ اصلی و مینی‌پلیر — هر دو به یک State وصل‌اند
+    val sharedVolume = mutableStateOf(settings.current.volume)
     val roots = LibraryRoots()
     val scope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val library = LibraryStore(roots, settings, scope)
     val controller = AppController()
+    controller.onWindowShown = { splash?.close() }
 
     val engine = JdkPlayerEngine(scope, outputFactory = { fmt ->
         // دستگاه انتخابی کاربر در تنظیمات — هر آهنگ تازه (یا بازگشایی خط)
         // میکسر را از همین‌جا می‌خواند
         AudioOutputs.create(fmt, settings.current.outputDevice)
     })
+
+    // ولوم مستقل از پنجره: پنجرهٔ اصلی وقتی minimize است رندر/بازترکیب نمی‌شود
+    // و LaunchedEffect داخل UI عملاً مرده است — پس تغییر ولومِ مینی‌پلیر به
+    // موتور نمی‌رسید. این جمع‌کننده بیرون Compose همیشه فعال است.
+    scope.launch {
+        androidx.compose.runtime.snapshotFlow { sharedVolume.value }.collect { v ->
+            engine.setVolume(v)
+            settings.setVolume(v)
+        }
+    }
 
     val tray = TrayController(
         appName = APP_NAME,
@@ -251,13 +295,49 @@ fun main(args: Array<String>) {
             undecorated = true
         ) {
             controller.attach(window)
+            // تشخیص minimize: با باز/بسته شدن حالت پنجره، مینی‌پلیر گوشهٔ صفحه می‌آید
+            LaunchedEffect(windowState) {
+                snapshotFlow { windowState.isMinimized }
+                    .collect { minimized -> controller.miniVisible.value = minimized }
+            }
             AlvandApp(
                 settings = settings,
                 library = library,
                 engine = engine,
                 incomingPaths = pendingExternalPaths,
                 windowState = windowState,
+                volumeState = sharedVolume,
                 onCloseWindow = { controller.hideWindow() }
+            )
+        }
+
+        // پنجرهٔ کوچک مینی‌پلیر — وقتی پنجرهٔ اصلی minimize می‌شود
+        if (controller.miniVisible.value) {
+            val engineState by engine.state.collectAsState()
+            // تم مینی‌پلیر عین تم پنجرهٔ اصلی (روشن/تیره/سیستمی)
+            val systemDark by SystemTheme.isSystemDark.collectAsState()
+            val miniDark = when (settings.current.themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                else -> systemDark
+            }
+            MiniPlayerWindow(
+                title = engineState.current?.title ?: APP_NAME,
+                artist = engineState.current?.artist ?: "",
+                isPlaying = engineState.isPlaying,
+                progress = engineState.progress,
+                accentThemeId = settings.current.accentTheme,
+                volume = sharedVolume.value,
+                darkTheme = miniDark,
+                onTogglePlay = { scope.launch { engine.toggle() } },
+                onNext = { scope.launch { engine.next() } },
+                onPrevious = { scope.launch { engine.previous() } },
+                onVolume = { sharedVolume.value = it },
+                onRestore = {
+                    controller.miniVisible.value = false
+                    controller.showWindow()
+                },
+                onClose = { controller.miniVisible.value = false }
             )
         }
     }
@@ -288,6 +368,7 @@ private fun AlvandApp(
     engine: JdkPlayerEngine,
     incomingPaths: kotlinx.coroutines.flow.MutableStateFlow<List<String>>,
     windowState: WindowState,
+    volumeState: MutableState<Float>? = null,
     onCloseWindow: () -> Unit
 ) {
     val state by settings.state.collectAsState()
@@ -307,7 +388,9 @@ private fun AlvandApp(
     var sleepMinutes by remember { mutableStateOf(0) }
     var sleepDeadlineMs by remember { mutableStateOf<Long?>(null) }
     var sleepRemainingLabel by remember { mutableStateOf<String?>(null) }
-    var volumeLevel by remember { mutableStateOf(state.volume) }
+    // ولوم مشترک: از main() می‌آید تا مینی‌پلیر هم همان را نشان/تغییر دهد
+    val volumeState = volumeState ?: remember { mutableStateOf(state.volume) }
+    var volumeLevel by volumeState
     var prevVolume by remember { mutableStateOf(state.volume) }
     var queueRestoredOnce by remember { mutableStateOf(false) }
 
@@ -325,6 +408,17 @@ private fun AlvandApp(
     // «پلی‌لیست‌ها» همین جریان را می‌خواند و همین‌جا ساخت/حذف انجام می‌شود.
     val db = remember { Database(AppPaths.dbFile).also { it.migrate() } }
     val playlistsRepo = remember(db) { PlaylistRepository(LibraryDao(db)) }
+
+    // تاریخچهٔ پخش: اخیراً پخش‌شده + پرتکرارترین‌ها — فقط آهنگ‌هایی که هنوز در
+    // کتابخانه‌اند نمایش داده می‌شوند (فایل حذف‌شده بی‌صدا رد می‌شود)
+    val recentHistory by playlistsRepo.observeRecent(20).collectAsState(initial = emptyList())
+    val mostPlayedHistory by playlistsRepo.observeMostPlayed(12).collectAsState(initial = emptyList())
+    val recentSongs = remember(recentHistory, librarySongs) {
+        recentHistory.mapNotNull { h -> librarySongs.firstOrNull { it.id == h.songId } }
+    }
+    val mostPlayedSongs = remember(mostPlayedHistory, librarySongs) {
+        mostPlayedHistory.mapNotNull { h -> librarySongs.firstOrNull { it.id == h.songId } }
+    }
     val playlists by playlistsRepo.observePlaylists().collectAsState(initial = emptyList())
     // آهنگ‌های هر پلی‌لیست کش می‌شوند تا با هر بازشدن، دیتابیس دوباره خوانده نشود
     var playlistSongs by remember { mutableStateOf<Map<Long, List<PlaylistSongEntity>>>(emptyMap()) }
@@ -405,12 +499,6 @@ private fun AlvandApp(
         }
     }
 
-    // ولوم روی موتور می‌نشیند و در تنظیمات می‌ماند تا بین اجراها حفظ شود
-    LaunchedEffect(volumeLevel) {
-        engine.setVolume(volumeLevel)
-        settings.setVolume(volumeLevel)
-    }
-
     val toggleMute: () -> Unit = {
         volumeLevel = if (volumeLevel > 0f) {
             prevVolume = volumeLevel; 0f
@@ -421,6 +509,19 @@ private fun AlvandApp(
 
     // تنظیمات DSP ذخیره‌شده باید بلافاصله روی موتور بنشیند و با هر تغییر دنبال شود
     LaunchedEffect(state.dspSpec) { engine.setDsp(state.dspSpec) }
+
+    // تاریخچهٔ پخش: هر آهنگ تازه‌ای که واقعاً پخش شد یک‌بار ثبت می‌شود؛
+    // مبنای «پرتکرارترین‌ها» و «پخش‌های اخیر» صفحهٔ خانه
+    LaunchedEffect(Unit) {
+        var lastRecordedId = -1L
+        engine.state.collect { st ->
+            val cur = st.current
+            if (cur != null && st.isPlaying && cur.id != lastRecordedId) {
+                lastRecordedId = cur.id
+                withContext(Dispatchers.IO) { playlistsRepo.recordPlay(cur.toLibrarySong()) }
+            }
+        }
+    }
 
     // دستگاه خروجی صدا: هر تغییر، خط پخش را با میکسر تازه باز می‌کند
     LaunchedEffect(state.outputDevice) { engine.setOutputDevice(state.outputDevice) }
@@ -437,6 +538,9 @@ private fun AlvandApp(
 
     val strings = remember(state.isPersian) { if (state.isPersian) StringsFa else StringsEn }
     var notice by remember { mutableStateOf<String?>(null) }
+    // بنر خطای پخش — قبلاً EngineState.error هیچ‌جا نمایش داده نمی‌شد و خطاها
+    // بی‌صدا بلعیده می‌شدند. با تغییر error دوباره ظاهر می‌شود.
+    var dismissedError by remember { mutableStateOf<String?>(null) }
     var isDropActive by remember { mutableStateOf(false) }
 
     // پیام‌های موقت (مثلاً فرمت پشتیبانی‌نشده) نباید برای همیشه روی صفحه بمانند.
@@ -764,9 +868,16 @@ private fun AlvandApp(
                     onPlaySong = { song -> playSongs(listOf(song)) },
 
                     content = {
-                        when (screen) {
+                        // ترنزیشن نرم بین صفحه‌ها — قبلاً پرش خشک بود (بدون هیچ انیمیشنی)
+                        androidx.compose.animation.Crossfade(
+                            targetState = screen,
+                            animationSpec = androidx.compose.animation.core.tween(180),
+                            label = "screenFade"
+                        ) { scr ->
+                        when (scr) {
                             Screen.HOME -> HomeScreen(
-                                recentSongs = librarySongs.take(14),
+                                recentSongs = recentSongs,
+                                mostPlayedSongs = mostPlayedSongs,
                                 accent = accent,
                                 onPlayMix = { playSongs(librarySongs) },
                                 onBrowse = { screen = Screen.LIBRARY },
@@ -776,6 +887,7 @@ private fun AlvandApp(
                             )
 
                             Screen.LIBRARY -> LibraryPage(
+                                accent = accent,
                                 store = library,
                                 onChooseFolder = chooseMusicFolder,
                                 onOpenFile = openAudioFile,
@@ -793,7 +905,9 @@ private fun AlvandApp(
                                     }
                                 },
                                 onPlayGroup = playSongs,
-                                onShowProperties = { song -> propertiesSong = song }
+                                onShowProperties = { song -> propertiesSong = song },
+                                onAddToQueue = { song -> engine.addToQueue(PlayableItem.fromSong(song)) },
+                                onToggleLike = { song -> settings.toggleLike(song.id) }
                             )
 
                             Screen.PLAYLISTS -> PlaylistsPage(
@@ -807,6 +921,7 @@ private fun AlvandApp(
 
                             Screen.DISCOVER -> DiscoverPage(
                                 songs = librarySongs,
+                                mostPlayed = mostPlayedSongs,
                                 onPlaySongs = playSongs
                             )
 
@@ -825,9 +940,17 @@ private fun AlvandApp(
                                 }
                             )
 
+                            Screen.EFFECTS -> EffectsPage(
+                                spec = state.dspSpec,
+                                accent = accent,
+                                onSpecChange = settings::setDspSpec
+                            )
+
                             Screen.VISUALIZER -> VisualizerPage(
                                 state = engineState,
                                 accent = accent,
+                                visualizerEnabled = state.visualizerEnabled,
+                                onToggleVisualizer = { settings.setVisualizerEnabled(!state.visualizerEnabled) },
                                 liked = likedNow,
                                 onToggleLike = toggleLikeNow,
                                 onTogglePlay = { coroutineScope.launch { engine.toggle() } },
@@ -855,8 +978,17 @@ private fun AlvandApp(
                                 onTogglePerformance = {
                                     settings.setPerformanceMode(!state.performanceMode)
                                 },
-                                onOutputDevice = { name -> settings.setOutputDevice(name) }
+                                onOutputDevice = { name -> settings.setOutputDevice(name) },
+                                sleepMinutes = sleepMinutes,
+                                onSleepChange = { min ->
+                                    sleepMinutes = min
+                                    sleepDeadlineMs = if (min > 0) {
+                                        SleepTimer.deadlineFromNow(System.currentTimeMillis(), min)
+                                    } else null
+                                    sleepRemainingLabel = null
+                                }
                             )
+                        }
                         }
                     },
 
@@ -871,10 +1003,12 @@ private fun AlvandApp(
                     onCycleRepeat = { engine.cycleRepeat() },
                     onSelectQueueIndex = { i -> coroutineScope.launch { engine.playIndex(i) } },
                     onMoveQueueItem = { from, to -> engine.moveInQueue(from, to) },
+                    onRemoveFromQueue = { i -> engine.removeFromQueue(i) },
+                    onClearQueue = { engine.clearQueue() },
                     onOpenLyrics = { showLyrics = true },
                     onShowProperties = { propertiesSong = currentSong() },
                     onOpenSettings = { screen = Screen.SETTINGS },
-                    onOpenNotifications = { /* TODO */ }
+                    onOpenMini = { screen = Screen.VISUALIZER }
                 )
 
                 if (notice != null) {
@@ -890,6 +1024,40 @@ private fun AlvandApp(
                     }
                 }
 
+                // بنر خطای پخش — پایینِ محتوا، با دکمهٔ بستن
+                val engineError = engineState.error
+                if (engineError != null && engineError != dismissedError) {
+                    val strings = LocalStrings.current
+                    Row(
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 8.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF7F1D1D))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            "${strings.errPlaying}: $engineError",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        IconButton(
+                            onClick = { dismissedError = engineError },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
                 propertiesSong?.let { song ->
                     SongPropertiesDialog(
                         song = song,
@@ -897,6 +1065,24 @@ private fun AlvandApp(
                         onToggleFavorite = { settings.toggleLike(song.id) },
                         onClose = { propertiesSong = null },
                         onJumpToTime = { propertiesSong = null; showJumpDialog = true },
+                        onEditTags = { edit ->
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val path = java.nio.file.Path.of(song.uri)
+                                val res = TagWriter.write(path, edit)
+                                if (res is TagWriter.Result.Success) {
+                                    val fresh = library.refreshSong(song.id)
+                                    if (fresh != null) {
+                                        kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                            propertiesSong = fresh
+                                        }
+                                    }
+                                } else {
+                                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                        notice = strings.propsSaveFailed
+                                    }
+                                }
+                            }
+                        },
                         loopA = engineState.loopA,
                         loopB = engineState.loopB,
                         onSetLoopA = { coroutineScope.launch { engine.setLoopStart() } },
@@ -949,3 +1135,16 @@ private fun AlvandApp(
     }
 }
 }
+
+/** تبدیل آیتم صف به مدل آهنگ برای ثبت تاریخچهٔ پخش */
+private fun com.alvand.player.player.PlayableItem.toLibrarySong(): Song = Song(
+    id = id,
+    title = title,
+    artist = artist,
+    album = album,
+    uri = uri,
+    durationMs = durationMs,
+    isRemote = isRemote,
+    mimeHint = mimeHint,
+    replayGainDb = replayGainDb
+)

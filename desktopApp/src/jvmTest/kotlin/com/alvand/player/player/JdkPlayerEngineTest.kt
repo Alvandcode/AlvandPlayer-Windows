@@ -229,6 +229,23 @@ class JdkPlayerEngineTest {
 
 
     @Test
+    fun `natural track end swaps the decoder without reopening the output (gapless)`() = runBlocking {
+        val engine = newEngine()
+        engine.onReady()
+        engine.setQueue(listOf(item(1), item(2)), 0, autoPlay = true)
+        // آهنگ ۴۰۰ms تمام می‌شود؛ آهنگ بعدی باید بدون شکاف شروع شود
+        assertTrue(waitUntil(5000) { engine.state.value.current?.title == "T2" },
+            "track 2 must follow track 1 automatically at natural end")
+        assertEquals(
+            1,
+            synchronized(sinks) { sinks.size },
+            "gapless must keep the same audio output open across tracks"
+        )
+        assertTrue(engine.state.value.isPlaying, "gapless continues playing without a pause")
+        engine.release()
+    }
+
+    @Test
     fun `next and previous walk through the queue in order`() = runBlocking {
         val engine = newEngine()
         engine.onReady()

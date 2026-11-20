@@ -115,5 +115,15 @@ fun rememberArtwork(uri: String?): State<ImageBitmap?> = produceState<ImageBitma
         value = null
         return@produceState
     }
-    if (value == null) value = loadArtwork(target)
+    // نکته: این پروڈوسر وقتی uri عوض می‌شود دوباره اجرا می‌شود، ولی «value»
+    // هنوز کاور آهنگ قبلی را دارد. اگر شرط را «value == null» بگذاریم،
+    // کاورِ قبلی برای همیشه می‌ماند و همهٔ آهنگ‌ها کاورِ آهنگِ اول را نشان
+    // می‌دادند. برعکسش هم خطرناک است: اگر فقط «value !== cached» چک کنیم،
+    // حالتِ «هردو نال» (آهنگِ هنوز کش‌نشده) از چنگمان درمی‌رود و کاور
+    // هیچ‌وقت بارگذاری نمی‌شود. پس فقط وقتی می‌پریم که مقدارِ فعلی واقعاً
+    // همان کاورِ کش‌شدهٔ مقصد باشد؛ در هر حالت دیگری دوباره می‌خوانیم.
+    val cached = ArtworkCache.get(target)
+    if (!(cached != null && value === cached)) {
+        value = cached ?: loadArtwork(target)
+    }
 }

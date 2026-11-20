@@ -189,15 +189,7 @@ private fun StationCard(
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            artist,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = pal.ink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            "$count",
+            "$count آهنگ",
             fontSize = 11.sp,
             color = pal.sub
         )

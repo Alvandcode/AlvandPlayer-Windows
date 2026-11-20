@@ -89,8 +89,8 @@ fun Sidebar(
 
             SectionLabel(s.navTools)
             NavItem(Icons.Filled.Equalizer, s.equalizer, current == Screen.EQUALIZER, accent) { onNavigate(Screen.EQUALIZER) }
-            // افکت‌ها همان صفحهٔ اکولایزر است (باس/نویز/ریورب همان‌جاست)
-            NavItem(Icons.Filled.Tune, s.navEffects, false, accent) { onNavigate(Screen.EQUALIZER) }
+            // افکت‌ها صفحهٔ خودش را دارد: باس/بلندی/اکو/کاهش نویز
+            NavItem(Icons.Filled.Tune, s.navEffects, current == Screen.EFFECTS, accent) { onNavigate(Screen.EFFECTS) }
             NavItem(Icons.Filled.GraphicEq, s.visualizer, current == Screen.VISUALIZER, accent) { onNavigate(Screen.VISUALIZER) }
 
             SectionLabel(s.navSettingsSection)

@@ -49,7 +49,6 @@ fun AppShell(
     searchResults: List<com.alvand.player.model.Song>,
     searchFocusRequester: androidx.compose.ui.focus.FocusRequester,
     onPlaySong: (com.alvand.player.model.Song) -> Unit,
-    onOpenNotifications: () -> Unit = {},
 
     // محتوای صفحهٔ فعال
     content: @Composable () -> Unit,
@@ -66,10 +65,12 @@ fun AppShell(
     onCycleRepeat: () -> Unit,
     onSelectQueueIndex: (Int) -> Unit,
     onMoveQueueItem: (Int, Int) -> Unit = { _, _ -> },
+    onRemoveFromQueue: (Int) -> Unit = { _ -> },
+    onClearQueue: () -> Unit = {},
     onOpenLyrics: () -> Unit,
     onShowProperties: () -> Unit = {},
     onOpenSettings: () -> Unit,
-    onOpenMini: () -> Unit = onNext,
+    onOpenMini: () -> Unit,
 
     // مینی‌پلیر (وقتی پنل راست جا نشود)
     onMiniPlay: () -> Unit = onTogglePlay,
@@ -106,8 +107,7 @@ fun AppShell(
                             results = searchResults,
                             focusRequester = searchFocusRequester,
                             onPlaySong = onPlaySong,
-                            onOpenSettings = onOpenSettings,
-                            onOpenNotifications = onOpenNotifications
+                            onOpenSettings = onOpenSettings
                         )
                         Box(Modifier.weight(1f)) { content() }
                     }
@@ -138,6 +138,8 @@ fun AppShell(
                     onCycleRepeat = onCycleRepeat,
                     onSelectQueueIndex = onSelectQueueIndex,
                     onMoveQueueItem = onMoveQueueItem,
+                    onRemoveFromQueue = onRemoveFromQueue,
+                    onClearQueue = onClearQueue,
                     onOpenLyrics = onOpenLyrics,
                     onShowProperties = onShowProperties
                 )

@@ -87,6 +87,12 @@ compose.desktop {
         mainClass = "com.alvand.player.MainKt"
 
         nativeDistributions {
+            // ماژول‌های لازم که تشخیص خودکار jالپکیج نمی‌بیند:
+            // - java.sql برای sqlite-jdbc (دیتابیس پلی‌لیست/تاریخچه) — بدون آن
+            //   برنامهٔ نصب‌شده با NoClassDefFoundError: java/sql/SQLException می‌میرد
+            // - jdk.unsupported برای sun.misc.Unsafe که sqlite-jdbc از آن استفاده می‌کند
+            modules("java.sql", "jdk.unsupported")
+
             // فقط فرمت‌های ویندوز: MSI و بوت‌استرپر EXE
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "AlvandPlayer"

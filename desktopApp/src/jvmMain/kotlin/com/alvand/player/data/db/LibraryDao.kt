@@ -15,6 +15,7 @@ class LibraryDao(private val db: Database) {
 
     private val playlistsFlow = MutableStateFlow<List<PlaylistEntity>>(emptyList())
     private val recentFlow = MutableStateFlow<List<PlayHistoryEntity>>(emptyList())
+    private val mostPlayedFlow = MutableStateFlow<List<PlayHistoryEntity>>(emptyList())
     private val playlistSongsFlows = mutableMapOf<Long, MutableStateFlow<List<PlaylistSongEntity>>>()
 
     // ---------------- Playlists ----------------
@@ -144,6 +145,20 @@ class LibraryDao(private val db: Database) {
         return recentFlow
     }
 
+    /** مرتب بر اساس تعداد پخش، نه زمان — سهمیهٔ «پرتکرارترین‌ها» */
+    fun observeMostPlayed(limit: Int = 20): Flow<List<PlayHistoryEntity>> {
+        refreshMostPlayed(limit)
+        return mostPlayedFlow
+    }
+    fun getMostPlayed(limit: Int = 20): List<PlayHistoryEntity> =
+        db.read { c ->
+            c.prepareStatement("SELECT * FROM ${Schema.PLAY_HISTORY} ORDER BY playCount DESC, playedAt DESC LIMIT ?")
+                .useRs { st ->
+                    st.setInt(1, limit)
+                    st.executeQuery().useRs { rs -> rs.mapRows(::readHistory) }
+                }
+        }
+
     fun getRecent(limit: Int = 50): List<PlayHistoryEntity> =
         db.read { c ->
             c.prepareStatement("SELECT * FROM ${Schema.PLAY_HISTORY} ORDER BY playedAt DESC LIMIT ?")
@@ -220,6 +235,11 @@ class LibraryDao(private val db: Database) {
 
     private fun refreshRecent(limit: Int = 50) {
         recentFlow.value = getRecent(limit)
+        mostPlayedFlow.value = getMostPlayed(20)
+    }
+
+    private fun refreshMostPlayed(limit: Int = 20) {
+        mostPlayedFlow.value = getMostPlayed(limit)
     }
 
     private fun queryPlaylistSongs(pid: Long): List<PlaylistSongEntity> =

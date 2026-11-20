@@ -156,6 +156,7 @@ try {
         "-dIconPath=$iconPath"
         "-dProductVersion=$Version"
         "-dProductCode=$ProductCode"
+        "-dLicensePath=$(Join-Path $ProjectRoot 'tools/license.rtf')"
     )
 
     $compile = @(

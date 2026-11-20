@@ -32,6 +32,12 @@ interface PlayerEngine {
     fun cycleRepeat()
     /** جابه‌جایی آیتم در صف — برای مرتب‌سازی دستی صف توسط کاربر */
     fun moveInQueue(from: Int, to: Int)
+    /** افزودن یک آهنگ به انتهای صف (بدون قطع پخش جاری) */
+    fun addToQueue(item: PlayableItem)
+    /** حذف یک آیتم از صف؛ اگر آهنگ در حال پخش باشد، پخش به آیتم بعدی می‌رود */
+    fun removeFromQueue(index: Int)
+    /** پاک کردن کامل صف و توقف پخش */
+    fun clearQueue()
     fun setDsp(spec: DspSpec)
     fun release()
 }

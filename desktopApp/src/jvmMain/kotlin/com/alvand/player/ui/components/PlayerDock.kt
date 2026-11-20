@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alvand.player.player.RepeatMode
 import com.alvand.player.system.AppIcons
+import com.alvand.player.ui.components.HintTooltip
 import com.alvand.player.ui.icons.Favorite
 import com.alvand.player.ui.icons.FavoriteBorder
 import com.alvand.player.ui.icons.Pause
@@ -97,6 +98,7 @@ fun TransportRow(
     showLike: Boolean = true
 ) {
     val pal = LocalAP.current
+    val s = com.alvand.player.i18n.LocalStrings.current
     // ترتیب چپ‌به‌راست ثابت می‌ماند، مثل نسخهٔ اندروید
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides
@@ -107,61 +109,73 @@ fun TransportRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Default.SkipPrevious,
-                    contentDescription = null,
-                    tint = pal.ink,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
-            Box(
-                Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(accent)
-                    .clickable(onClick = onTogglePlay),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Default.SkipNext,
-                    contentDescription = null,
-                    tint = pal.ink,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
-            IconButton(onClick = onToggleShuffle, modifier = Modifier.size(38.dp)) {
-                Icon(
-                    Icons.Default.Shuffle,
-                    contentDescription = null,
-                    tint = if (shuffleEnabled) accent else pal.sub,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            IconButton(onClick = onCycleRepeat, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    if (repeatMode == RepeatMode.ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    contentDescription = null,
-                    tint = if (repeatMode == RepeatMode.OFF) pal.sub else accent,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            if (showLike) {
-                IconButton(onClick = onToggleLike, modifier = Modifier.size(38.dp)) {
+            HintTooltip(s.scNextPrev) {
+                IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
                     Icon(
-                        if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        Icons.Default.SkipPrevious,
                         contentDescription = null,
-                        tint = if (liked) accent else pal.sub,
+                        tint = pal.ink,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+            HintTooltip(s.scPlay) {
+                Box(
+                    Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                        .clickable(onClick = onTogglePlay),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+            HintTooltip(s.scNextPrev) {
+                IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        Icons.Default.SkipNext,
+                        contentDescription = null,
+                        tint = pal.ink,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+            HintTooltip(s.scShuffle) {
+                IconButton(onClick = onToggleShuffle, modifier = Modifier.size(38.dp)) {
+                    Icon(
+                        Icons.Default.Shuffle,
+                        contentDescription = null,
+                        tint = if (shuffleEnabled) accent else pal.sub,
                         modifier = Modifier.size(22.dp)
                     )
+                }
+            }
+            HintTooltip(s.scRepeat) {
+                IconButton(onClick = onCycleRepeat, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        if (repeatMode == RepeatMode.ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                        contentDescription = null,
+                        tint = if (repeatMode == RepeatMode.OFF) pal.sub else accent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            if (showLike) {
+                HintTooltip(s.scFav) {
+                    IconButton(onClick = onToggleLike, modifier = Modifier.size(38.dp)) {
+                        Icon(
+                            if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (liked) accent else pal.sub,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }

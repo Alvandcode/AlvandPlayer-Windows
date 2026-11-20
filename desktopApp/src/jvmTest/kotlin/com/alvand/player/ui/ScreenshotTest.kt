@@ -200,6 +200,7 @@ class ScreenshotTest {
             val shots = mutableListOf<String>()
             shots += ScreenshotTool.render("10-library-songs-en", widthDp = 1180, heightDp = 820) {
                 com.alvand.player.ui.screens.LibraryPage(
+                    accent = androidx.compose.ui.graphics.Color(0xFFB9A7FF),
                     store = store,
                     onChooseFolder = {},
                     onPlay = {}
@@ -207,6 +208,7 @@ class ScreenshotTest {
             }
             shots += ScreenshotTool.render("11-library-songs-fa", widthDp = 1180, heightDp = 820, persian = true) {
                 com.alvand.player.ui.screens.LibraryPage(
+                    accent = androidx.compose.ui.graphics.Color(0xFFB9A7FF),
                     store = store,
                     onChooseFolder = {},
                     onPlay = {}
@@ -215,6 +217,7 @@ class ScreenshotTest {
             store.setQuery("coldplay")
             shots += ScreenshotTool.render("13-library-search-en", widthDp = 1180, heightDp = 820) {
                 com.alvand.player.ui.screens.LibraryPage(
+                    accent = androidx.compose.ui.graphics.Color(0xFFB9A7FF),
                     store = store,
                     onChooseFolder = {},
                     onPlay = {}

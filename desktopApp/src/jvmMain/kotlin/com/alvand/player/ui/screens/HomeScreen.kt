@@ -58,32 +58,43 @@ import com.alvand.player.ui.theme.LocalAP
 import java.time.LocalTime
 
 /**
- * آفتاب کوچک کنارِ سلام — همان نشانِ هواشناسیِ کنار «Good Morning» در طرح.
- *
- * کوچک و ساده است، پس مستقیم کشیده می‌شود: یک دایرهٔ توپر و هشت پرتو.
+ * آفتاب روز / ماه شب کنارِ سلام — نشانِ هواشناسیِ کنار «Good Morning» در طرح.
+ * شب (بعد از ۱۸ و قبل از ۶) هلال ماه کشیده می‌شود تا با سلامِ «شب بخیر» نخواند.
  */
 @Composable
-private fun SunGlyph(modifier: Modifier = Modifier) {
+private fun SunGlyph(modifier: Modifier = Modifier, isNight: Boolean = false) {
     Canvas(modifier) {
-        val r = size.minDimension * 0.30f
-        val c = center
-        drawCircle(Color.White, radius = r, center = c)
-        val inner = size.minDimension * 0.40f
-        val outer = size.minDimension * 0.48f
-        for (i in 0 until 8) {
-            val a = i * Math.PI / 4.0
-            drawLine(
-                color = Color.White,
-                start = Offset(
-                    c.x + (inner * kotlin.math.cos(a)).toFloat(),
-                    c.y + (inner * kotlin.math.sin(a)).toFloat()
-                ),
-                end = Offset(
-                    c.x + (outer * kotlin.math.cos(a)).toFloat(),
-                    c.y + (outer * kotlin.math.sin(a)).toFloat()
-                ),
-                strokeWidth = size.minDimension * 0.09f,
-                cap = androidx.compose.ui.graphics.StrokeCap.Round
+        if (!isNight) {
+            val r = size.minDimension * 0.30f
+            val c = center
+            drawCircle(Color.White, radius = r, center = c)
+            val inner = size.minDimension * 0.40f
+            val outer = size.minDimension * 0.48f
+            for (i in 0 until 8) {
+                val a = i * Math.PI / 4.0
+                drawLine(
+                    color = Color.White,
+                    start = Offset(
+                        c.x + (inner * kotlin.math.cos(a)).toFloat(),
+                        c.y + (inner * kotlin.math.sin(a)).toFloat()
+                    ),
+                    end = Offset(
+                        c.x + (outer * kotlin.math.cos(a)).toFloat(),
+                        c.y + (outer * kotlin.math.sin(a)).toFloat()
+                    ),
+                    strokeWidth = size.minDimension * 0.09f,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+            }
+        } else {
+            // هلال ماه: دایرهٔ کامل + دایرهٔ برشی به رنگ پس‌زمینهٔ بنر
+            val c = center
+            val r = size.minDimension * 0.42f
+            drawCircle(Color.White, radius = r, center = c)
+            drawCircle(
+                color = Color(0xFF2B1055), // رنگ آسمان بالای بنر
+                radius = r * 0.85f,
+                center = Offset(c.x + r * 0.55f, c.y - r * 0.25f)
             )
         }
     }
@@ -118,6 +129,7 @@ private fun mountainPath(w: Float, h: Float, baseY: Float, peak: Float, seed: In
 @Composable
 fun HomeScreen(
     recentSongs: List<Song>,
+    mostPlayedSongs: List<Song> = emptyList(),
     accent: Color,
     onPlayMix: () -> Unit,
     onBrowse: () -> Unit,
@@ -141,42 +153,31 @@ fun HomeScreen(
             onBrowse = onBrowse
         )
 
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            FeatureCard(
-                title = s.cardLibraryTitle,
-                subtitle = s.cardLibrarySub,
-                icon = { Icon(Icons.Filled.LibraryMusic, null, tint = Color.White, modifier = Modifier.size(24.dp)) },
-                gradient = listOf(Color(0xFF8B5CF6), Color(0xFF5B2FD6)),
-                onClick = { onNavigate(Screen.LIBRARY) },
-                modifier = Modifier.weight(1f)
-            )
-            FeatureCard(
-                title = s.cardDiscoverTitle,
-                subtitle = s.cardDiscoverSub,
-                icon = { Icon(Icons.Filled.Explore, null, tint = Color.White, modifier = Modifier.size(24.dp)) },
-                gradient = listOf(Color(0xFF14B8A6), Color(0xFF0E7490)),
-                onClick = { onNavigate(Screen.DISCOVER) },
-                modifier = Modifier.weight(1f)
-            )
-            FeatureCard(
-                title = s.cardRadioTitle,
-                subtitle = s.cardRadioSub,
-                icon = { Icon(Icons.Filled.Radio, null, tint = Color.White, modifier = Modifier.size(24.dp)) },
-                gradient = listOf(Color(0xFFF43F5E), Color(0xFFBE123C)),
-                onClick = { onNavigate(Screen.RADIO) },
-                modifier = Modifier.weight(1f)
-            )
-            FeatureCard(
-                title = s.cardSettingsTitle,
-                subtitle = s.cardSettingsSub,
-                icon = { Icon(Icons.Filled.Settings, null, tint = Color.White, modifier = Modifier.size(24.dp)) },
-                gradient = listOf(Color(0xFF3B82F6), Color(0xFF1D4ED8)),
-                onClick = { onNavigate(Screen.SETTINGS) },
-                modifier = Modifier.weight(1f)
-            )
+        // چهار کارت ویژگی — همه با گرادیان هم‌خوانِ تم (قبلاً رنگ‌های هاردکد
+        // بودند و با تم اکسنت کاربر ناسازگار می‌افتادند)
+        val accentDeep = com.alvand.player.ui.theme.LocalAccentTheme.current.deep(pal.isDark)
+        val themedGradient = listOf(accent, accentDeep)
+
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val wide = maxWidth >= 760.dp
+            if (wide) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FeatureCard(s.cardLibraryTitle, s.cardLibrarySub, { Icon(Icons.Filled.LibraryMusic, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.LIBRARY) }, Modifier.weight(1f))
+                    FeatureCard(s.cardDiscoverTitle, s.cardDiscoverSub, { Icon(Icons.Filled.Explore, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.DISCOVER) }, Modifier.weight(1f))
+                    FeatureCard(s.cardRadioTitle, s.cardRadioSub, { Icon(Icons.Filled.Radio, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.RADIO) }, Modifier.weight(1f))
+                    FeatureCard(s.cardSettingsTitle, s.cardSettingsSub, { Icon(Icons.Filled.Settings, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.SETTINGS) }, Modifier.weight(1f))
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    FeatureCard(s.cardLibraryTitle, s.cardLibrarySub, { Icon(Icons.Filled.LibraryMusic, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.LIBRARY) }, Modifier.fillMaxWidth())
+                    FeatureCard(s.cardDiscoverTitle, s.cardDiscoverSub, { Icon(Icons.Filled.Explore, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.DISCOVER) }, Modifier.fillMaxWidth())
+                    FeatureCard(s.cardRadioTitle, s.cardRadioSub, { Icon(Icons.Filled.Radio, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.RADIO) }, Modifier.fillMaxWidth())
+                    FeatureCard(s.cardSettingsTitle, s.cardSettingsSub, { Icon(Icons.Filled.Settings, null, tint = Color.White, modifier = Modifier.size(22.dp)) }, themedGradient, { onNavigate(Screen.SETTINGS) }, Modifier.fillMaxWidth())
+                }
+            }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -199,6 +200,23 @@ fun HomeScreen(
                 }
             }
         }
+
+        if (mostPlayedSongs.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    s.mostPlayed,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = pal.ink,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(mostPlayedSongs, key = { "mp-${it.id}" }) { song ->
+                    RecentCard(song = song, onClick = { onPlaySong(song) })
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -209,8 +227,10 @@ private fun HeroBanner(
     onPlayMix: () -> Unit,
     onBrowse: () -> Unit
 ) {
+    val pal = LocalAP.current
     val s = LocalStrings.current
     val hour = LocalTime.now().hour
+    val isNight = hour >= 18 || hour < 6
     val greeting = when {
         hour < 12 -> s.greetingMorning
         hour < 18 -> s.greetingAfternoon
@@ -291,8 +311,8 @@ Box(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // آفتاب کوچک کنارِ سلام — همان نشانِ هواشناسیِ طرح
-                SunGlyph(Modifier.size(Spacing.xs * 4))
+                // آفتاب روز / ماه شب کنارِ سلام — با زمان هم‌خوان
+                SunGlyph(Modifier.size(Spacing.xs * 4), isNight = isNight)
                 Spacer(Modifier.width(Spacing.xs))
                 Text(greeting, fontSize = 13.sp, color = Color.White)
             }
@@ -352,16 +372,15 @@ private fun FeatureCard(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(Spacing.lg)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.22f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    icon()
-                }
-                Spacer(Modifier.weight(1f))
+                Text(
+                    title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
                 Icon(
                     Icons.Filled.KeyboardArrowRight,
                     contentDescription = null,
@@ -369,14 +388,6 @@ private fun FeatureCard(
                     modifier = Modifier.size(Spacing.md)
                 )
             }
-            Text(
-                title,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
             Text(
                 subtitle,
                 fontSize = 11.sp,

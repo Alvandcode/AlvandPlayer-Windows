@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +26,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,10 +70,14 @@ fun SettingsPage(
     onToggleOnlineLyrics: () -> Unit,
     onTogglePerformance: () -> Unit,
     onOutputDevice: (String?) -> Unit,
+    sleepMinutes: Int = 0,
+    onSleepChange: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val s = LocalStrings.current
     val pal = LocalAP.current
+    var showShortcuts by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
 
     Column(
         modifier
@@ -137,6 +146,22 @@ fun SettingsPage(
                     )
                 }
             }
+
+            // تایمر خواب — قبلاً فقط با میانبر کیبورد در دسترس بود و UI نداشت
+            Text(s.sleepTimer, fontSize = 13.sp, color = pal.sub, modifier = Modifier.padding(top = 10.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SelectChip(s.sleepOff, sleepMinutes == 0, onClick = { onSleepChange(0) })
+                listOf(15, 30, 45, 60).forEach { min ->
+                    SelectChip(
+                        "$min ${if (s.language == "فارسی") "دقیقه" else "min"}",
+                        sleepMinutes == min,
+                        onClick = { onSleepChange(min) }
+                    )
+                }
+            }
         }
 
         SettingsRow(
@@ -170,37 +195,49 @@ fun SettingsPage(
                     )
                 }
             }
-            if (settings.themeMode == ThemeMode.SYSTEM) {
-                Text(
-                    "system = " + (if (systemDark) "dark" else "light"),
-                    fontSize = 11.sp,
-                    color = pal.sub,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
         }
 
         SettingsRow(
             icon = Icons.Filled.Keyboard,
             title = s.setShortcuts,
-            subtitle = s.shortcutsHint
+            subtitle = s.shortcutsHint,
+            onClick = { showShortcuts = true }
         )
         SettingsRow(
             icon = Icons.Filled.Info,
             title = s.setAbout,
-            subtitle = "${s.appName} ${s.appVersion}"
+            subtitle = "${s.appName} ${s.appVersion}",
+            onClick = { showAbout = true }
         )
         Spacer(Modifier.height(8.dp))
     }
+
+    if (showShortcuts) {
+        ShortcutsDialog(s) { showShortcuts = false }
+    }
+    if (showAbout) {
+        AboutDialog(s) { showAbout = false }
+    }
 }
 
-/** ردیفِ سربرگِ هر بخش: آیکون + عنوان + توضیح، با فلش (فقط بصری). */
+/** ردیفِ سربرگِ هر بخش: آیکون + عنوان + توضیح (اختیاری: کلیک‌پذیر). */
 @Composable
-private fun SettingsRow(icon: ImageVector, title: String, subtitle: String) {
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: (() -> Unit)? = null
+) {
     val pal = LocalAP.current
     Row(
         Modifier
             .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onClick)
+                else Modifier
+            )
             .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -232,6 +269,83 @@ private fun SubCard(content: @Composable androidx.compose.foundation.layout.Colu
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) { content() }
+}
+
+/** دیالوگ فهرست میانبرهای کیبورد — قبلاً ردیف تنظیمات کاملاً مرده بود. */
+@Composable
+private fun ShortcutsDialog(s: com.alvand.player.i18n.Strings, onClose: () -> Unit) {
+    val pal = LocalAP.current
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        Column(
+            Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(pal.card)
+                .padding(20.dp)
+                .widthIn(max = 420.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(s.setShortcuts, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = pal.ink)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(s.scActionCol, fontSize = 12.sp, color = pal.sub)
+                Text(s.scKeyCol, fontSize = 12.sp, color = pal.sub)
+            }
+            listOf(
+                s.scPlay to "Space",
+                s.scNextPrev to "← / →",
+                s.scSeek to "Ctrl + ← / →",
+                s.scVolume to "↑ / ↓",
+                s.scMute to "M",
+                s.scFav to "L",
+                s.scShuffle to "S",
+                s.scRepeat to "R",
+                s.scSearch to "Ctrl + K",
+                s.scSleep to "T",
+                s.scEq to "E",
+                s.scProps to "I",
+                s.scJump to "J",
+                s.scLoop to "B",
+                s.scViz to "V"
+            ).forEach { (action, key) ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(action, fontSize = 13.sp, color = pal.ink)
+                    Text(key, fontSize = 13.sp, color = pal.sub)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SelectChip(s.close, true, onClick = onClose)
+            }
+        }
+    }
+}
+
+/** دیالوگ دربارهٔ برنامه — قبلاً ردیف «درباره» مرده بود. */
+@Composable
+private fun AboutDialog(s: com.alvand.player.i18n.Strings, onClose: () -> Unit) {
+    val pal = LocalAP.current
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        Column(
+            Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(pal.card)
+                .padding(20.dp)
+                .widthIn(max = 380.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(s.appName, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = pal.ink)
+            Text(s.appVersion, fontSize = 12.sp, color = pal.sub)
+            Text(
+                s.aboutBody,
+                fontSize = 13.sp,
+                color = pal.ink,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Text(s.aboutLicense, fontSize = 11.sp, color = pal.sub)
+            Spacer(Modifier.height(4.dp))
+            SelectChip(s.close, true, onClick = onClose)
+        }
+    }
 }
 
 @Composable

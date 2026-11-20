@@ -188,6 +188,15 @@ class JdkPlayerEngine(
     override suspend fun play() = controlMutex.withLock { playInternal() }
 
     private suspend fun playInternal() {
+        // اگر آهنگِ «current» با چیزی که رمزگشا از قبل آماده کرده فرق دارد،
+        // باید اول همان آماده شود — وگرنه setQueue(autoPlay=true) که در حال
+        // پخش صدا زده می‌شود فقط برچسبِ آهنگ را عوض می‌کرد و رمزگشای قدیمی
+        // همچنان می‌خواند (باگِ «آهنگ جدید پخش نمی‌شود»).
+        val cur = _state.value.current
+        if (cur != null && preparedItem?.id != cur.id) {
+            prepareCurrent()
+            if (_state.value.current == null || output == null) return
+        }
         if (_state.value.current == null) {
             prepareCurrent()
             if (_state.value.current == null) return
@@ -391,6 +400,60 @@ override suspend fun previous() {
         }
     }
 
+    override fun addToQueue(item: PlayableItem) {
+        queue.append(item)
+        _state.value = _state.value.copy(
+            queue = queue.items(),
+            index = queue.currentIndex
+        )
+    }
+
+    override fun removeFromQueue(index: Int) {
+        val before = _state.value.index
+        scope.launch {
+            controlMutex.withLock {
+                if (index != before && index !in queue.items().indices) return@withLock
+                val wasCurrent = index == before && before >= 0
+                if (!queue.removeAt(index)) return@withLock
+                if (queue.isEmpty()) {
+                    // صف خالی شد — توقف کامل
+                    stopPumpThread()
+                    decoder = null
+                    _state.value = _state.value.copy(
+                        current = null, isPlaying = false, queue = emptyList(), index = -1,
+                        positionMs = 0L, durationMs = 0L, spectrum = emptyList()
+                    )
+                } else if (wasCurrent) {
+                    // آهنگ در حال پخش حذف شد — همان جایگاه (آهنگ بعدی) پخش می‌شود
+                    switchToCurrentAndPlay()
+                    _state.value = _state.value.copy(
+                        queue = queue.items(),
+                        index = queue.currentIndex
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        queue = queue.items(),
+                        index = queue.currentIndex
+                    )
+                }
+            }
+        }
+    }
+
+    override fun clearQueue() {
+        scope.launch {
+            controlMutex.withLock {
+                queue.clear()
+                stopPumpThread()
+                decoder = null
+                _state.value = _state.value.copy(
+                    current = null, isPlaying = false, queue = emptyList(), index = -1,
+                    positionMs = 0L, durationMs = 0L, spectrum = emptyList()
+                )
+            }
+        }
+    }
+
     override fun cycleRepeat() {
         val mode = queue.cycleRepeat()
         _state.value = _state.value.copy(repeatMode = mode)
@@ -507,9 +570,9 @@ override suspend fun previous() {
     }
 
     private fun pumpLoop(gen: Long) {
-        val dec = decoder ?: return
+        var dec = decoder ?: return
         var out = output ?: return
-        val chain = DspChain(dsp, dec.format, volume)
+        var chain = DspChain(dsp, dec.format, volume)
         var appliedVolume = volume
         var appliedDsp = dsp
 
@@ -610,6 +673,18 @@ override suspend fun previous() {
                     stopPumpThread()
                     return
                 }
+
+                // مسیر gapless: آهنگ تمام شد ولی آهنگ بعدی موجود و هم‌قالب است؛
+                // دیکودر را بدون بستن خط صدا عوض می‌کنیم تا هیچ شکاف صدایی نباشد.
+                if (tryGaplessSwap()) {
+                    dec = decoder ?: return
+                    // زنجیره برای دیکودر تازه و بهرهٔ ReplayGain تازه ساخته می‌شود
+                    chain = DspChain(dsp, dec.format, volume)
+                    appliedVolume = volume
+                    appliedDsp = dsp
+                    continue
+                }
+
                 onTrackFinished()
                 return
             }
@@ -645,6 +720,39 @@ override suspend fun previous() {
                 _state.value = _state.value.copy(positionMs = played, spectrum = spectrum)
             }
         }
+    }
+
+    /**
+     * تعویض بدون شکستگی صدا (gapless): اگر آهنگ بعدی موجود و هم‌قالب با فعلی
+     * باشد، دیکودر عوض و صف جلو می‌رود ولی خط صدا باز می‌ماند.
+     * در قالب متفاوت (نرخ/کانال) یا خطای دیکودر، false برمی‌گردد تا مسیر عادی
+     * با باز شدن دوبارهٔ خط برود — شکاف کوچک فقط همان‌جا.
+     */
+    private fun tryGaplessSwap(): Boolean {
+        if (!_state.value.isPlaying) return false
+        val nextIndex = queue.nextIndex()
+        if (nextIndex < 0 || nextIndex == queue.currentIndex) return false // تکرار یک‌باره مسیر عادی
+        val nextItem = queue.peekAt(nextIndex) ?: return false
+        val nextDec = decoderFactory(nextItem.uri, nextItem.mimeHint) ?: return false
+        val curFormat = decoder?.format
+        if (curFormat == null || nextDec.format != curFormat) {
+            runCatching { nextDec.close() }
+            return false
+        }
+        val oldDec = decoder
+        decoder = nextDec
+        runCatching { oldDec?.close() }
+        queue.moveTo(nextIndex)
+        replayGainLinear = nextItem.replayGainDb?.let { db ->
+            (10.0.pow(db.toDouble() / 20.0)).toFloat().coerceIn(0.05f, 5f)
+        } ?: 1f
+        preparedItem = nextItem
+        output?.resetPosition(0)
+        publishCurrent()
+        _state.value = _state.value.copy(
+            durationMs = if (nextDec.totalDurationMs > 0) nextDec.totalDurationMs else nextItem.durationMs
+        )
+        return true
     }
 
     private fun onTrackFinished() {

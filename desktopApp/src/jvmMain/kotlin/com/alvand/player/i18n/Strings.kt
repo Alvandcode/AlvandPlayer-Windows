@@ -96,6 +96,7 @@ data class Strings(
     val cardSettingsTitle: String,
     val cardSettingsSub: String,
     val recentlyPlayed: String,
+    val mostPlayed: String,
     val viewAll: String,
     val nowPlaying: String,
     val queueTitle: String,
@@ -156,12 +157,46 @@ data class Strings(
     val eqReverbMedium: String,    // windows-only
     val eqReverbLarge: String,     // windows-only
 
+    // ---- بهبودهای UX (windows-only) ----
+    val libEmptyHint: String,      // windows-only
+    val playNow: String,           // windows-only
+    val addToQueue: String,        // windows-only
+    val removeFromQueue: String,   // windows-only
+    val clearQueue: String,        // windows-only
+    val moveUp: String,            // windows-only
+    val moveDown: String,          // windows-only
+    val errPlaying: String,        // windows-only
+    val vizEnable: String,         // windows-only
+    val scKeyCol: String,          // windows-only
+    val scActionCol: String,       // windows-only
+    val scPlay: String,            // windows-only
+    val scNextPrev: String,        // windows-only
+    val scSeek: String,            // windows-only
+    val scVolume: String,          // windows-only
+    val scMute: String,            // windows-only
+    val scFav: String,             // windows-only
+    val scShuffle: String,         // windows-only
+    val scRepeat: String,          // windows-only
+    val scSearch: String,          // windows-only
+    val scSleep: String,           // windows-only
+    val scEq: String,              // windows-only
+    val scProps: String,           // windows-only
+    val scJump: String,            // windows-only
+    val scLoop: String,            // windows-only
+    val scViz: String,             // windows-only
+    val aboutBody: String,         // windows-only
+    val aboutLicense: String,      // windows-only
+
     // ---- شناسنامهٔ آهنگ (windows-only) ----
     val details: String,           // windows-only
     val propsTags: String,         // windows-only
     val propsTitle: String,        // windows-only
     val propsArtist: String,       // windows-only
     val propsAlbum: String,        // windows-only
+    val propsGenre: String,        // windows-only
+    val propsEditTags: String,     // windows-only
+    val propsSave: String,         // windows-only
+    val propsSaveFailed: String,   // windows-only
     val propsDuration: String,     // windows-only
     val propsFile: String,         // windows-only
     val propsName: String,         // windows-only
@@ -286,6 +321,7 @@ val StringsEn = Strings(
     cardSettingsTitle = "Settings",
     cardSettingsSub = "Customize your experience",
     recentlyPlayed = "Recently Played",
+    mostPlayed = "Most Played",
     viewAll = "View All",
     nowPlaying = "Now Playing",
     queueTitle = "Queue",
@@ -332,6 +368,34 @@ val StringsEn = Strings(
     eqReset = "Reset",
     eqPresets = "Presets",
     eqManual = "Manual",
+    libEmptyHint = "Your library is empty. Choose a music folder or open files to start.",
+    playNow = "Play now",
+    addToQueue = "Add to queue",
+    removeFromQueue = "Remove from queue",
+    clearQueue = "Clear queue",
+    moveUp = "Move up",
+    moveDown = "Move down",
+    errPlaying = "Playback error",
+    vizEnable = "Enable",
+    scKeyCol = "Key",
+    scActionCol = "Action",
+    scPlay = "Play / Pause",
+    scNextPrev = "Next / Previous track",
+    scSeek = "Seek ±5s",
+    scVolume = "Volume up / down",
+    scMute = "Mute",
+    scFav = "Favorite",
+    scShuffle = "Shuffle",
+    scRepeat = "Repeat mode",
+    scSearch = "Search (library)",
+    scSleep = "Sleep timer",
+    scEq = "Open equalizer",
+    scProps = "Song details",
+    scJump = "Jump to time",
+    scLoop = "A–B loop",
+    scViz = "Visualizer",
+    aboutBody = "Alvand Player — desktop music player for Windows. Kotlin and Compose Multiplatform, fully offline.",
+    aboutLicense = "Released under the MIT license.",
     eqBands = "Bands",
     eqTone = "Tone",
     eqBass = "Bass",
@@ -349,6 +413,10 @@ val StringsEn = Strings(
     propsTitle = "Title",
     propsArtist = "Artist",
     propsAlbum = "Album",
+    propsGenre = "Genre",
+    propsEditTags = "Edit tags",
+    propsSave = "Save",
+    propsSaveFailed = "Tag could not be saved (file may be locked)",
     propsDuration = "Duration",
     propsFile = "File",
     propsName = "Name",
@@ -459,6 +527,7 @@ val StringsFa = Strings(
     cardSettingsTitle = "تنظیمات",
     cardSettingsSub = "تجربه‌تان را شخصی کنید",
     recentlyPlayed = "اخیراً پخش‌شده",
+    mostPlayed = "پرتکرارترین‌ها",
     viewAll = "مشاهدهٔ همه",
     nowPlaying = "در حال پخش",
     queueTitle = "صف",
@@ -505,6 +574,34 @@ val StringsFa = Strings(
     eqReset = "بازنشانی",
     eqPresets = "پریست‌ها",
     eqManual = "دستی",
+    libEmptyHint = "کتابخانه‌تان خالی است. یک پوشهٔ موسیقی انتخاب کنید یا فایل باز کنید.",
+    playNow = "پخش همین حالا",
+    addToQueue = "افزودن به صف",
+    removeFromQueue = "حذف از صف",
+    clearQueue = "پاک کردن صف",
+    moveUp = "انتقال به بالا",
+    moveDown = "انتقال به پایین",
+    errPlaying = "خطا در پخش",
+    vizEnable = "فعال",
+    scKeyCol = "کلید",
+    scActionCol = "کنش",
+    scPlay = "پخش / توقف",
+    scNextPrev = "آهنگ بعدی / قبلی",
+    scSeek = "پرش ±۵ ثانیه",
+    scVolume = "کم و زیاد کردن صدا",
+    scMute = "بی‌صدا",
+    scFav = "علاقه‌مندی",
+    scShuffle = "پخش درهم",
+    scRepeat = "حالت تکرار",
+    scSearch = "جستجو (کتابخانه)",
+    scSleep = "تایمر خواب",
+    scEq = "باز کردن اکولایزر",
+    scProps = "شناسنامهٔ آهنگ",
+    scJump = "پرش به زمان",
+    scLoop = "حلقهٔ A–B",
+    scViz = "ویژوالایزر",
+    aboutBody = "الوند پلیر — موزیک‌پلیر دسکتاپ برای ویندوز. کاتلین و Compose Multiplatform، کاملاً آفلاین.",
+    aboutLicense = "تحت مجوز MIT منتشر شده است.",
     eqBands = "باندها",
     eqTone = "لحن صدا",
     eqBass = "باس",
@@ -522,6 +619,10 @@ val StringsFa = Strings(
     propsTitle = "عنوان",
     propsArtist = "خواننده",
     propsAlbum = "آلبوم",
+    propsGenre = "ژانر",
+    propsEditTags = "ویرایش تگ",
+    propsSave = "ذخیره",
+    propsSaveFailed = "ذخیرهٔ تگ ممکن نشد (شاید فایل قفل است)",
     propsDuration = "مدت",
     propsFile = "فایل",
     propsName = "نام",

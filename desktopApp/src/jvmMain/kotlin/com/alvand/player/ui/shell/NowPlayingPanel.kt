@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -76,6 +78,8 @@ fun NowPlayingPanel(
     onCycleRepeat: () -> Unit,
     onSelectQueueIndex: (Int) -> Unit,
     onMoveQueueItem: (Int, Int) -> Unit = { _, _ -> },
+    onRemoveFromQueue: (Int) -> Unit = {},
+    onClearQueue: () -> Unit = {},
     onOpenLyrics: () -> Unit,
     onShowProperties: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -211,6 +215,33 @@ fun NowPlayingPanel(
                 color = pal.ink,
                 modifier = Modifier.weight(1f)
             )
+            if (state.queue.isNotEmpty()) {
+                var clearMenu by remember { mutableStateOf(false) }
+                Box {
+                    com.alvand.player.ui.components.HintTooltip(s.clearQueue) {
+                        IconButton(
+                            onClick = { clearMenu = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                tint = pal.sub,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    DropdownMenu(expanded = clearMenu, onDismissRequest = { clearMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(s.clearQueue, fontSize = 13.sp) },
+                            onClick = {
+                                clearMenu = false
+                                onClearQueue()
+                            }
+                        )
+                    }
+                }
+            }
             IconButton(
                 onClick = { queueExpanded = !queueExpanded },
                 modifier = Modifier.size(28.dp)
@@ -240,7 +271,8 @@ fun NowPlayingPanel(
                         accent = accent,
                         onClick = { onSelectQueueIndex(index) },
                         onMoveUp = { onMoveQueueItem(index, index - 1) },
-                        onMoveDown = { onMoveQueueItem(index, index + 1) }
+                        onMoveDown = { onMoveQueueItem(index, index + 1) },
+                        onRemove = { onRemoveFromQueue(index) }
                     )
                 }
             }
@@ -321,7 +353,8 @@ private fun QueueRow(
     accent: Color,
     onClick: () -> Unit,
     onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit
+    onMoveDown: () -> Unit,
+    onRemove: () -> Unit
 ) {
     val pal = LocalAP.current
     val artwork by rememberArtwork(item.uri)
@@ -390,24 +423,36 @@ private fun QueueRow(
         if (item.durationMs > 0) {
             Text(formatTime(item.durationMs), fontSize = 11.sp, color = pal.sub)
         }
-        // مرتب‌سازی دستی صف: دکمه‌های بالا/پایین با hover — پایدارتر از درگ
-        // داخل LazyColumn و قابل استفاده با کیبورد هم.
+        // مرتب‌سازی دستی صف — دکمه‌های واقعی با هدف کلیک قابل قبول (قرارداد دسکتاپ)
         Column {
-            Text(
-                "▲",
-                fontSize = 10.sp,
-                color = pal.sub,
-                modifier = Modifier
-                    .clickable(onClick = onMoveUp)
-                    .padding(horizontal = 2.dp)
-            )
-            Text(
-                "▼",
-                fontSize = 10.sp,
-                color = pal.sub,
-                modifier = Modifier
-                    .clickable(onClick = onMoveDown)
-                    .padding(horizontal = 2.dp)
+            com.alvand.player.ui.components.HintTooltip(com.alvand.player.i18n.LocalStrings.current.moveUp) {
+                IconButton(onClick = onMoveUp, modifier = Modifier.size(22.dp)) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowUp,
+                        contentDescription = null,
+                        tint = pal.sub,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            com.alvand.player.ui.components.HintTooltip(com.alvand.player.i18n.LocalStrings.current.moveDown) {
+                IconButton(onClick = onMoveDown, modifier = Modifier.size(22.dp)) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = pal.sub,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+        // حذف از صف — دکمهٔ همیشه‌نمایان اما کم‌رنگ
+        IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = com.alvand.player.i18n.LocalStrings.current.removeFromQueue,
+                tint = pal.sub,
+                modifier = Modifier.size(16.dp)
             )
         }
     }

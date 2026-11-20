@@ -101,6 +101,18 @@ class LibraryStore(
 
     fun toggleFavourite(song: Song) = settings.toggleLike(song.id)
 
+    /**
+     * پس از ویرایش تگ، همان فایل دوباره خوانده و جایگزین می‌شود تا عنوان/
+     * خوانندهٔ جدید بی‌درنگ در کتابخانه دیده شود — بدون اسکن کامل.
+     */
+    fun refreshSong(songId: Long): Song? {
+        val uri = _songs.value.firstOrNull { it.id == songId }?.uri ?: return null
+        val file = java.nio.file.Path.of(uri)
+        val fresh = runCatching { TagReader.toSong(file) }.getOrNull() ?: return null
+        _songs.value = _songs.value.map { if (it.id == songId) fresh else it }
+        return fresh
+    }
+
     fun addRoot(path: Path) = roots.add(path)
 
     fun removeRoot(path: Path) = roots.remove(path)

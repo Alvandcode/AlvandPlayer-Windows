@@ -1,5 +1,6 @@
 package com.alvand.player.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -27,17 +28,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alvand.player.i18n.LocalStrings
+import com.alvand.player.ui.components.SelectChip
 import com.alvand.player.player.EngineState
 import com.alvand.player.ui.components.LinearSeekBar
 import com.alvand.player.ui.components.TransportRow
@@ -55,6 +59,8 @@ import com.alvand.player.ui.theme.LocalAP
 fun VisualizerPage(
     state: EngineState,
     accent: Color,
+    visualizerEnabled: Boolean,
+    onToggleVisualizer: () -> Unit,
     liked: Boolean,
     onToggleLike: () -> Unit,
     onTogglePlay: () -> Unit,
@@ -77,9 +83,10 @@ fun VisualizerPage(
         animationSpec = infiniteRepeatable(tween(24_000, easing = LinearEasing), RepeatMode.Restart),
         label = "spin"
     )
-    // اگر طیف نداریم (صفحه ساکت)، چند میلهٔ ساختگیِ ملایم می‌سازیم تا حلقه خالی نباشد
-    val bars = remember(state.spectrum) {
-        if (state.spectrum.isEmpty()) List(48) { 0.06f } else state.spectrum
+    // اگر طیف نداریم: وقتی پخش متوقف است صادقانه صفر می‌مانیم — حلقهٔ خالی
+    // بهتر از حرکت قلابی است (قبلاً ۴۸ میلهٔ ساختگی ثابت رندر می‌شد)
+    val bars = remember(state.spectrum, state.isPlaying) {
+        if (state.spectrum.isEmpty()) List(48) { 0f } else state.spectrum
     }
 
     Column(
@@ -90,12 +97,17 @@ fun VisualizerPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(
-            s.visualizer,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = pal.ink
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                s.visualizer,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = pal.ink,
+                modifier = Modifier.weight(1f)
+            )
+            // روشن/خاموش ویژوالایزر — کنترلش باید اینجا باشد، نه در اکولایزر
+            SelectChip(s.vizEnable, visualizerEnabled, onClick = onToggleVisualizer)
+        }
 
         // حلقهٔ طیف دور دایرهٔ وسط — قلب ویژوالایزر
         Box(
@@ -129,7 +141,7 @@ fun VisualizerPage(
                 val n = bars.size
                 val inner = maxRadius - 30.dp.toPx()
                 for (i in 0 until n) {
-                    val amp = bars[i].coerceIn(0.05f, 1f)
+                    val amp = (bars[i] * (if (visualizerEnabled) 1f else 0f)).coerceIn(0f, 1f)
                     val angle = (i.toFloat() / n) * 2f * Math.PI.toFloat()
                     val h = amp * 24.dp.toPx()
                     val mid = inner - h / 2f
@@ -151,24 +163,34 @@ fun VisualizerPage(
                 }
             }
 
-            // دایرهٔ وسط با نشان برنامه
+            // دایرهٔ وسط با کاور آهنگ (به‌جای حرف A)
             Box(
                 Modifier
                     .size(140.dp)
+                    .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
                             listOf(accent.copy(alpha = 0.35f), accent.copy(alpha = 0.08f))
-                        ),
-                        CircleShape
+                        )
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "A",
-                    fontSize = 56.sp,
-                    fontWeight = FontWeight.Black,
-                    color = accent
-                )
+                val centerArtwork by com.alvand.player.ui.components.rememberArtwork(current?.uri ?: "")
+                if (centerArtwork != null) {
+                    Image(
+                        bitmap = centerArtwork!!,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        "A",
+                        fontSize = 56.sp,
+                        fontWeight = FontWeight.Black,
+                        color = accent
+                    )
+                }
             }
         }
 

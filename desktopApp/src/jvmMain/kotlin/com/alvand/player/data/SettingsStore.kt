@@ -60,6 +60,8 @@ class SettingsStore(
                 queueSnapshot = props.getProperty("queue_snapshot") ?: "",
                 performanceMode = props.getProperty("performance_mode")
                     ?.toBooleanStrictOrNull() ?: false,
+                visualizerEnabled = props.getProperty("visualizer_enabled")
+                    ?.toBooleanStrictOrNull() ?: true,
             )
         }.getOrElse { error ->
             // رفتار عمدی: فایل تنظیمات خراب یعنی برگشت به پیش‌فرض‌ها.
@@ -85,6 +87,7 @@ class SettingsStore(
             setProperty("output_device", s.outputDevice ?: "")
             setProperty("queue_snapshot", s.queueSnapshot)
             setProperty("performance_mode", s.performanceMode.toString())
+            setProperty("visualizer_enabled", s.visualizerEnabled.toString())
             s.backgroundPath?.let { setProperty("background_uri", it) }
         }
 
@@ -152,6 +155,7 @@ class SettingsStore(
     /** حالت کارایی (کاهشکیفیت برای سیستم‌های ضعیف) */
     fun setPerformanceMode(enabled: Boolean) = update { it.copy(performanceMode = enabled) }
 
+    fun setVisualizerEnabled(enabled: Boolean) = update { it.copy(visualizerEnabled = enabled) }
     /** اسنپ‌شات صف playback — ذخیره و بازesti بین اجراها */
     fun setQueueSnapshot(snapshot: String) = update { it.copy(queueSnapshot = snapshot) }
 
@@ -184,6 +188,8 @@ data class AppSettings(
     val queueSnapshot: String = "",
     /** حالت کارایی (کاهشکیفیت برای سیستم‌های ضعیف) */
     val performanceMode: Boolean = false,
+    /** روشن/خاموش ویژوالایزر (حلقهٔ طیف) */
+    val visualizerEnabled: Boolean = true,
 ) {
     val isPersian: Boolean get() = com.alvand.player.data.AppLocale.normalize(language) == "fa"
 

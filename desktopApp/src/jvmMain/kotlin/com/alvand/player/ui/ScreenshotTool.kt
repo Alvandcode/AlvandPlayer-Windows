@@ -161,6 +161,12 @@ object ScreenshotTool {
                         com.alvand.player.ui.screens.DiscoverPage(songs = songs, onPlaySongs = {})
                     com.alvand.player.ui.shell.Screen.RADIO ->
                         com.alvand.player.ui.screens.RadioPage(songs = songs, onPlaySongs = {})
+                    com.alvand.player.ui.shell.Screen.EFFECTS ->
+                        com.alvand.player.ui.screens.EffectsPage(
+                            spec = com.alvand.player.audio.DspSpec(),
+                            accent = accent,
+                            onSpecChange = {}
+                        )
                     com.alvand.player.ui.shell.Screen.EQUALIZER ->
                         com.alvand.player.ui.screens.EqualizerPage(
                             spec = com.alvand.player.audio.DspSpec(preset = 2),
@@ -187,6 +193,8 @@ object ScreenshotTool {
                         com.alvand.player.ui.screens.VisualizerPage(
                             state = engineStateFor(queue, index, progress),
                             accent = accent,
+                            visualizerEnabled = true,
+                            onToggleVisualizer = {},
                             liked = false,
                             onToggleLike = {},
                             onTogglePlay = {},
@@ -207,6 +215,7 @@ object ScreenshotTool {
                         )
                     com.alvand.player.ui.shell.Screen.LIBRARY ->
                         com.alvand.player.ui.screens.LibraryPage(
+                            accent = accent,
                             store = storeFor(name),
                             onChooseFolder = {},
                             onPlay = {}
@@ -224,7 +233,8 @@ object ScreenshotTool {
             onCycleRepeat = {},
             onSelectQueueIndex = {},
             onOpenLyrics = {},
-            onOpenSettings = {}
+            onOpenSettings = {},
+            onOpenMini = {}
         )
     }
 

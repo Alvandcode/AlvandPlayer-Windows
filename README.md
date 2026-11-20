@@ -1,177 +1,152 @@
-# Alvand Player — Windows
+<div align="center">
 
-پورت دسکتاپ ویندوزِ **Alvand Player**، همان موزیک‌پلیر اندروید.
-ساخته‌شده با Kotlin + Compose Multiplatform، بدون هیچ سرویس ابری و بدون هیچ
-ردیابی.
+# 🎵 Alvand Player — Windows
 
-> **وضعیت: milestones ۱ تا ۷ تمام شده.** اسکلت پروژه، سیستم طراحی، پنجره، تعویض تم،
-> آیکون نوار وظیفه، تک‌نمونه‌سازی، **کتابخانهٔ موسیقی** و **موتور پخش با DSP** آماده‌اند و
-> اجرا می‌شوند. صدا روی دستگاه واقعی پخش می‌شود. متن آهنگ، تایمر خواب، صف ماندگار
-> و اکولایزر هم ساخته شده‌اند.
-> هنوز نصب‌کنندهٔ نهایی و یکپارچگی کامل با ویندوز (کلیدهای مدیا/SMTC/فایل‌انجکشن)
-> باقی است — طبق
-> [نقشهٔ راه](docs/PORT-DIFFERENCES.md).
+**A beautiful, privacy-first music player for Windows — no cloud, no tracking, no compromises.**
 
----
+[پورت ویندوزِ **الوند پلیر** — موزیک‌پلیر اندرویدی شما، حالا روی دسکتاپ](#-فارسی)
 
-## چه چیزی الان کار می‌کند
+**Kotlin · Compose Multiplatform · Pure-Java Audio · Zero Telemetry**
 
-- ✅ **پخش صدا**: موتور کامل با صف، پخش/توقف، جلو/عقب، تکرار، شافل، جست‌وجوی موقعیت،
-  و رد کردن خودکار فایل خراب (حداکثر ۳ خطای پشت‌سرهم، مثل اندروید)
-- ✅ **رمزگشایی WAV، MP3، FLAC، Ogg Vorbis و M4A/AAC** — همه خالص جاوا،
-  بدون ffmpeg بومی، بدون زیرپروسه، و بدون تغییر در لایسنس
-- ✅ **DSP**: اکولایزر ۵ باندی با همان پریست‌های سیستمی اندروید، کاهش نویز، تقویت باس،
-  و محدودکنندهٔ صدا که اجازهٔ کلیپ شدن نمی‌دهد — و **ماندگار بین اجراها**
-- ✅ **کتابخانهٔ موسیقی**: انتخاب پوشه با دیالوگ فقط-پوشه، باز کردن مستقیم فایل صوتی،
-  کشیدن و رها کردن پوشه/فایل روی پنجره، اسکن خودکار همهٔ درایوها به‌جز C،
-  خواندن تگ‌های فایل، جستجو، ۴ حالت مرتب‌سازی، گروپ‌بندی آلبوم/خواننده، علاقه‌مندی‌ها،
-  و برگشت سراسری (دکمه در همهٔ صفحه‌ها + کلید Esc مثل Back اندروید)
-- ✅ **صفحهٔ پلیر به سبک هدیونیت**: نوار وضعیت (نشان برنامه، ساعت زنده، بج فرمت)،
-  کاروسل هفت‌کاوره با درگ و کلیک برای انتخاب، نوار پیشرفت خطی با تپ/درگ، ردیف
-  کنترل‌های آیکونی (قلب/قبلی/پخش/بعدی/شافل/تکرار)، و داک شیشه‌ای بخش‌ها
-  (کتابخانه/اکولایزر/متن آهنگ/تنظیمات) با اسلایدر ولوم — و پس‌زمینهٔ کاورِ آهنگِ
-  در حال پخش با تیرگی بسیار زیاد تا متن خوانا بماند
-- ✅ **قاب پنجرهٔ اختصاصی**: نوار عنوان هم‌رنگ تم با درگ/دابل‌کلیک/مینیمایز/
-  ماکسیمایز/بستن و دستگیره‌های ریسایز — بدون قاب سفید جداافتادهٔ ویندوز
-- ✅ سیستم طراحی کامل: پالت روشن/تیره و ۴ تم رنگی، دقیقاً همان کدهای رنگ نسخهٔ اندروید
-  (با تستی که جلوی تغییر ناخواستهٔ آن‌ها را می‌گیرد)
-- ✅ تعویض تم: روشن / تیره / پیش‌فرض سیستم (از تنظیمات خود ویندوز خوانده می‌شود)
-- ✅ ۴ تم رنگی: مینیمال، سلطنتی، غروب، اقیانوس
-- ✅ کارت‌های شیشه‌ای با برق لبه و هالهٔ بالا (پورت ۱:۱ از `GlassDesign.kt`)
-- ✅ زبان فارسی با چیدمان راست‌به‌چپ
-- ✅ ماندن در نوار وظیفه وقتی پنجره بسته می‌شود
-- ✅ تک‌نمونه‌سازی: اجرای دوم، آرگومان‌ها را به نمونهٔ اول می‌دهد
-- ✅ **صف ماندگار**: با بستن برنامه صف نمی‌پرد، بدون پخش خودکار برمی‌گردد
-- ✅ **تایمر خواب**: خاموش → ۱۵/۳۰/۴۵/۶۰ دقیقه با شمارش معکوس روی صفحهٔ پلیر
-- ✅ **هالهٔ استیج الوند**: دو لکهٔ نوری بیضوی پشت کارت‌ها + حالت **Performance**
-  برای GPU ضعیف (بدون blur، بدون وابستگی جدید)
-- ✅ **میانبرهای کیبورد**: Space/←/→/S/R/M/T/Ctrl+K و ... با راهنما روی صفحه
-- ✅ **جستجوی عملگری**: `artist:`/`album:`/`title:` (و فارسی) با `"..."` برای فاصله
-- ✅ **اکولایزر با رابط کاربری**: ۱۱ پریست + ۵ باند، باس، بلندی، کاهش نویز و اکوی
-  اتاق — اعمال زنده روی موتور و ماندگار بین اجراها (میانبر `E`)
-- ✅ **شناسنامهٔ آهنگ**: تگ + مشخصات واقعی فایل (حجم/فرمت/مسیر) + نرخ/کانال/بیت
-  فقط وقتی واقعاً خوانده شود، با دکمهٔ «نمایش در پوشه» (میانبر `I`)
-- ✅ **متن آهنگ سنک‌شده**: LRCLIB رایگان فقط با رضایت صریح (پیش‌فرض خاموش)،
-  خط فعال پررنگ با اسکرول خودکار، کش آفلاین روی دیسک
-- ✅ **داک پخش به سبک هدیونیت**: نوار وضعیت با ساعت زنده/فرمت/ولوم، دکمهٔ
-  علاقه‌مندی (قلب)، متن آهنگ و اسلایدر ولوم — همه ماندگار بین اجراها
-- ✅ دیتابیس SQLite با مهاجرت فقط‌رو‌به‌جلو (پلی‌لیست و تاریخچهٔ پخش)
-- ✅ ماندگاری تنظیمات با نوشتن اتمیک (کرش وسط نوشتن، تنظیمات را خراب نمی‌کند)
-- ✅ **۳۳۱ تست** که بدون نمایشگر اجرا می‌شوند
+[![Platform](https://img.shields.io/badge/platform-Windows-blue)](#-english)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/Compose%20Multiplatform-1.12-7F52FF?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-mpp/)
+[![Tests](https://img.shields.io/badge/tests-340%2B%20passing-brightgreen)](#-build--test--ساخت-و-تست)
+[![Release](https://img.shields.io/badge/release-v1.2.3-orange)](#-download--دانلود)
 
-## کاور آهنگ‌ها
-
-کاور از دو جا خوانده می‌شود: اول تصویرِ داخل خود فایل، و اگر نبود، تصویرِ کنار
-فایل (`cover.jpg`، `folder.png`، یا تصویری با همان نامِ آهنگ). اگر آهنگ هیچ کاوری
-نداشته باشد، حرف اول عنوانش روی کارت نشان داده می‌شود. هیچ درخواست شبکه‌ای داده
-نمی‌شود.
-
-## چه چیزی هنوز ساخته نشده
-
-WMA، Opus و ALAC هنوز رمزگشایی نمی‌شوند (WAV، MP3، FLAC، Ogg و M4A/AAC پخش می‌شوند).
-همچنین کلیدهای مدیا، SMTC و نصب‌کنندهٔ نهایی ساخته نشده‌اند.
-ترتیب کارها در [PORT-DIFFERENCES.md](docs/PORT-DIFFERENCES.md) آمده است.
+</div>
 
 ---
 
-## اجرا
+<div align="center">
 
-```powershell
-.\gradlew.bat :desktopApp:run
-```
+**⭐ If Alvand Player finds a place on your desktop, a star is the best "thank you" — it helps others discover it.**
 
-پیش‌نیاز: فقط **JDK 17**. نه Android Studio لازم است، نه Android SDK.
+**⭐ اگر الوند پلیر جای خودش را روی دسکتاپ شما پیدا کرد، ستاره‌دادن صادقانه‌ترین «متشکرم» است — به دیگران هم کمک می‌کند آن را پیدا کنند.**
 
-جزئیات بیشتر: [BUILD.md](BUILD.md)
-
-## تست
-
-```powershell
-.\gradlew.bat jvmTest
-```
-
-۳۲۰ تست، همگی بدون نمایشگر. ۵۶ تست مستقیماً از تست‌های نسخهٔ اندروید پورت شده‌اند.
-
-### تست با فایل صوتی واقعی
-
-بخشی از تست‌های رمزگشایی به فایل واقعی نیاز دارند (برای MP3 چون JLayer مخزن بیت
-دارد و برای Ogg چون اصلاً رمزگذار Vorbis خالص جاوا وجود ندارد). اگر متغیر محیطی
-زیر تنظیم نباشد آن‌ها **skip** می‌شوند:
-
-```powershell
-$env:ALVAND_MP3_TEST_FILE="C:\path\to\some\song.mp3"
-$env:ALVAND_OGG_TEST_FILE="C:\path\to\some\song.ogg"
-.\gradlew.bat jvmTest
-```
-
-### عکس گرفتن از صفحه‌ها
-
-```powershell
-.\gradlew.bat :desktopApp:jvmTest --tests "*ScreenshotTest*"
-```
-
-عکس‌ها در `desktopApp/build/screenshots/` ساخته می‌شوند — بدون باز کردن پنجره.
+</div>
 
 ---
 
-## حریم خصوصی
+## 🇬🇧 English
 
-- **هیچ تله‌متری، آنالیتیک، یا آپلود کرش وجود ندارد.**
-- تنها درخواست شبکهٔ برنامه، جست‌وجوی اختیاری متن آهنگ در LRCLIB است
-  که به‌صورت پیش‌فرض **خاموش** است و فقط وقتی خودِ کاربر کلیدش را روشن کند
-  (از شیت «متن آهنگ»)، و فقط نام خواننده/عنوان ارسال می‌شود.
-- برنامه هیچ‌وقت چیزی از اینترنت جمع‌آوری یا ارسال نمی‌کند.
-- گزارش کرش فقط روی همان کامپیوتر ذخیره می‌شود و هرگز خودکار ارسال نمی‌شود.
+### Why another music player?
 
-## آیکون
+Because you deserve a player that **stays on your machine**. Alvand Player is a faithful Windows port of the beloved Android *Alvand Player*: the same design language, the same DSP chain, the same careful engineering — rebuilt natively with Kotlin and Compose Multiplatform. No accounts. No telemetry. No crash uploads. Your music never leaves your PC.
 
-آیکون نهایی روی این مسیرهاست و در بیلد و بسته‌بندی استفاده می‌شود:
+### ✨ Highlights
 
-- `desktopApp/icons/alvand.ico` — ۹ اندازه (۱۶ تا ۲۵۶) برای نصب‌کننده و Explorer
-- `desktopApp/src/jvmMain/resources/icons/alvand-{16,24,32,48,64,128,256}.png`
-  — برای پنجره و نوار وظیفه
+| | |
+|---|---|
+| 🎧 **Real playback engine** | Custom pure-Java decoders for **WAV, MP3, FLAC, Ogg Vorbis, M4A/AAC** — no native ffmpeg, no subprocesses, no license headaches. Gapless playback, queue persistence, auto-skip of corrupt files (max 3 in a row), A–B loop. |
+| 🎚️ **Full DSP** | 5-band equalizer (11 presets, identical to Android's system presets), bass boost, treble, noise reduction, room reverb, gain + limiter — all live, all persisted between runs. |
+| 🖼️ **Glass design** | Light/dark themes × 4 accent themes (Minimal, Royal, Sunset, Ocean), 1:1 ported from Android's `GlassDesign.kt` — glass cards, edge shine, top glow, stage glow. |
+| 📚 **Smart library** | Folder picking, drag-and-drop, auto-scan of all drives, tag reading, operator search (`artist:` / `album:` / `title:`), album/artist/genre grouping, favorites, most-played & recently-played. |
+| ⌨️ **Desktop-native** | Global media keys (headset & keyboard), single-instance, tray-resident, keyboard shortcuts with an in-app cheatsheet, output device selection, floating mini-player, sleep timer. |
+| 🎤 **Synced lyrics** | LRCLIB integration — opt-in only, with offline caching. |
+| 🏷️ **Tag editor** | Edit title/artist/album/genre directly from the song's properties (MP3/FLAC/Ogg/M4A). |
+| 🔒 **Privacy** | Zero telemetry, zero analytics, zero crash uploads. The only optional network request is lyrics search, **off by default**. |
+| 📦 **Real installer** | Signed-less but complete MSI installer with Start-menu shortcut and file associations. |
 
-### ساخت دوباره از طرح اصلی
+### 📥 Download
 
-```powershell
-.\tools\make-icon.ps1 -Source "C:\path\to\logo.png"
-```
-
-اسکریپت ناحیهٔ واقعی تصویر را با آلفا پیدا می‌کند (تا حاشیهٔ شفاف وارد آیکون
-نشود)، و **آلفا را قبل از کوچک‌کردن پیش‌ضرب می‌کند و بعد از آن حذف می‌کند** —
-وگرنه رنگِ پیکسل‌های شفاف به لبه نشت می‌کند و دور آیکون هالهٔ تیره می‌افتد.
-
-### یک نکتهٔ صادقانه دربارهٔ اندازه‌های کوچک
-
-طرح فعلی یک **قاب + گلیف + هالهٔ نرم** است. در ۶۴ پیکسل به بالا عالی خوانده می‌شود،
-اما در **۱۶ و ۲۴ پیکسل** جزئیات در هم ادغام می‌شوند و «A» به‌سختی دیده می‌شود.
-
-این با بزرگ‌کردن حل نمی‌شود (آزموده شد: بزرگ‌نمایی ۱٫۲ گوشه‌های قاب را می‌بُند) و
-هیچ تنظیم خودکاری نمی‌تواند طرح را خواناتر کند بدون اینکه تحریفش کند. راه‌حل
-استاندارد، **نسخهٔ ساده‌شدهٔ مخصوص اندازه‌های کوچک** است. اگر آن را بسازید، کافی است
-این دو فایل را جایگزین کنید و بقیهٔ کد دست‌نخورده می‌ماند:
-
-- `desktopApp/src/jvmMain/resources/icons/alvand-16.png`
-- `desktopApp/src/jvmMain/resources/icons/alvand-24.png`
-- (اختیاری) `alvand-32.png`
-
-## آیکون‌های داخل برنامه
-
-هفت آیکون کنترل پخش (`Pause`, `PlayArrow`, `Shuffle`, `Repeat`, `RepeatOne`,
-`SkipNext`, `SkipPrevious`) داخل خود پروژه تعریف شده‌اند و **از سورس رسمی
-Material Icons بدون هیچ تغییری** کپی شده‌اند.
-
-دلیل: بستهٔ `material-icons-extended` ۳۶ مگابایت بود ولی برنامه فقط ۷ آیکون از آن
-می‌گرفت. حذف آن **۳۶ مگابایت** از بستهٔ نهایی کم کرد (۲۱٫۸٪ کوچک‌تر). ظاهر
-آیکون‌ها روی صفحه دقیقاً مثل قبل است.
+Grab the latest MSI from the [**Releases**](../../releases) page, double-click, done. Or run from source:
 
 ```powershell
-.\tools\generate-transport-icons.ps1   # بازسازی از سورس رسمی
+.\gradlew.bat :desktopApp:run      # requires only JDK 17
 ```
 
-فایل تولیدی: `desktopApp/src/jvmMain/kotlin/com/alvand/player/ui/icons/TransportIcons.kt`
-(لایسنس Apache-2.0)
+### 🛠️ Build & Test
 
-## مجوز
+```powershell
+.\gradlew.bat jvmTest              # 340+ headless tests
+.\gradlew.bat :desktopApp:createDistributable
+```
 
-MIT — مثل نسخهٔ اندروید.
+See [BUILD.md](BUILD.md) for details.
+
+### 🗺️ Roadmap
+
+WMA / Opus / ALAC decoding, SMTC (Windows volume flyout) integration, Authenticode signing. Full port-status tracking in [PORT-DIFFERENCES.md](docs/PORT-DIFFERENCES.md).
+
+---
+
+<div dir="rtl">
+
+## 🇮🇷 فارسی
+
+### چرا یک پلیر دیگر؟
+
+چون لایق پلیری هستید که **روی خودِ سیستم شما بماند**. الوند پلیر، پورت وفادارِ ویندوزیِ *الوند پلیر اندروید* است: همان زبان طراحی، همان زنجیرهٔ DSP، همان مهندسیِ دقیق — با کاتلین و Compose Multiplatform از نو ساخته شده. نه حساب کاربری، نه تله‌متری، نه آپلود کرش. موسیقی شما هرگز از کامپیوترتان خارج نمی‌شود.
+
+### ✨ ویژگی‌ها
+
+| | |
+|---|---|
+| 🎧 **موتور پخش واقعی** | رمزگشای خالص جاوا برای **WAV، MP3، FLAC، Ogg Vorbis، M4A/AAC** — بدون ffmpeg بومی، بدون زیرپروسه، بدون دردسر لایسنس. پخش بدون شکاف، صف ماندگار، رد خودکار فایل خراب، حلقهٔ A–B. |
+| 🎚️ **DSP کامل** | اکولایزر ۵ باندی (۱۱ پریست، دقیقاً پریست‌های سیستمی اندروید)، تقویت باس، بلندی، کاهش نویز، اکوی اتاق، بهره + محدودکننده — همگی زنده و ماندگار بین اجراها. |
+| 🖼️ **طراحی شیشه‌ای** | تم روشن/تیره × ۴ تم رنگی (مینیمال، سلطنتی، غروب، اقیانوس)، پورت ۱:۱ از `GlassDesign.kt` اندروید — کارت‌های شیشه‌ای، برق لبه، هالهٔ بالا، هالهٔ استیج. |
+| 📚 **کتابخانهٔ هوشمند** | انتخاب پوشه، کشیدن و رها کردن، اسکن خودکار همهٔ درایوها، خواندن تگ، جستجوی عملگری (`artist:` / `album:` / `title:`)، گروپ‌بندی آلبوم/خواننده/ژانر، علاقه‌مندی‌ها، پرتکرارترین‌ها و اخیراً پخش‌شده‌ها. |
+| ⌨️ **بومیِ دسکتاپ** | کلیدهای مدیای سراسری (هدست و کیبورد)، تک‌نمونه‌سازی، اقامت در سینی، میانبرهای کیبورد با راهنمای درون‌برنامه‌ای، انتخاب دستگاه خروجی، مینی‌پلیر شناور، تایمر خواب. |
+| 🎤 **متن آهنگ سنک‌شده** | یکپارچگی با LRCLIB — فقط با رضایت شما، با کش آفلاین. |
+| 🏷️ **ویرایشگر تگ** | ویرایش عنوان/خواننده/آلبوم/ژانر از شناسنامهٔ آهنگ (MP3/FLAC/Ogg/M4A). |
+| 🔒 **حریم خصوصی** | صفر تله‌متری، صفر آنالیتیک، صفر آپلود کرش. تنها درخواست شبکهٔ اختیاری، جستجوی متن آهنگ است که **پیش‌فرضش خاموش** است. |
+| 📦 **نصب‌کنندهٔ واقعی** | نصب‌کنندهٔ MSI کامل با میانبر منوی استارت و انجکت فایل‌ها. |
+
+### 📥 دانلود
+
+آخرین MSI را از صفحهٔ [**Releases**](../../releases) بگیرید، دابل‌کلیک کنید، تمام. یا از سورس اجرا کنید:
+
+```powershell
+.\gradlew.bat :desktopApp:run      # فقط JDK 17 لازم است
+```
+
+### 🛠️ ساخت و تست
+
+```powershell
+.\gradlew.bat jvmTest              # بیش از ۳۴۰ تست بدون نمایشگر
+.\gradlew.bat :desktopApp:createDistributable
+```
+
+جزئیات بیشتر در [BUILD.md](BUILD.md).
+
+### 🗺️ نقشهٔ راه
+
+رمزگشایی WMA / Opus / ALAC، یکپارچگی با SMTC (فول‌اوت ولوم ویندوز)، امضای Authenticode. وضعیت کامل پورت در [PORT-DIFFERENCES.md](docs/PORT-DIFFERENCES.md).
+
+---
+
+### 🤝 حمایت از پروژه
+
+اگر الوند پلیر به کارتان آمده، چند راه ساده برای حمایت هستید:
+
+- ⭐ **به ریپو ستاره بدهید** — ساده‌ترین و مؤثرترین حمایت؛ پروژه را به دیده‌شدن کمک می‌کند
+- 🐛 **باگ یا پیشنهاد بدهید** — هر Issue ارزشمند است و معمولاً سریع بررسی می‌شود
+- 🔀 **Pull Request بفرستید** — به‌خصوص برای موارد نقشهٔ راه (WMA، Opus، SMTC)
+- 📣 **به دوستان موزیک‌دوستتان معرفی کنید**
+
+### 📢 کانال تلگرام
+
+اخبار انتشار، اسکرین‌شات‌های نسخه‌های جدید، و نکات استفاده را در کانال تلگرام دنبال کنید:
+
+<div dir="ltr">
+
+**[https://t.me/a_c_official](https://t.me/a_c_official)**
+
+</div>
+
+</div>
+
+---
+
+## 📄 License / مجوز
+
+MIT — free to use, modify, and distribute. / آزاد برای استفاده، تغییر و انتشار.
+
+<div align="center">
+
+**⭐ Star this repo if it deserves it — it genuinely helps.**
+**⭐ اگر لایق است، ستاره بدهید — واقعاً کمک می‌کند.**
+
+</div>

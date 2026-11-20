@@ -2,6 +2,8 @@ package com.alvand.player.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -35,7 +37,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -86,19 +90,33 @@ fun EqualizerPage(
                 modifier = Modifier.weight(1f)
             )
             SelectChip(
-                label = presetLabel(spec),
+                label = presetLabel(spec, s),
                 selected = false,
-                onClick = { /* انتخابگر پایین صفحه این کار را می‌کند */ }
+                onClick = {
+                    // کلیک روی برچسب پریست، پریست بعدی را انتخاب می‌کند:
+                    // دستی → rock → … → piano → دستی
+                    val next = if (spec.preset >= EqPresets.DISPLAY_ORDER.lastIndex) -1 else spec.preset + 1
+                    onSpecChange(DspUiLogic.applyPreset(spec, next))
+                }
             )
         }
 
         // فیدرهای عمودی — قلب صفحه، مثل طرح
+        // مقیاس dB سمت چپ: ‎+۱۵ / ۰ / −۱۵ — بدون آن، کاربر مرجعی برای مقدار ندارد
         GlassCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(18.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Row(Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    Modifier
+                        .height(150.dp)
+                        .width(26.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                 ) {
+                    Text("+15", fontSize = 9.sp, color = pal.sub)
+                    Text("0", fontSize = 9.sp, color = pal.ink)
+                    Text("-15", fontSize = 9.sp, color = pal.sub)
+                }
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     freqs.forEachIndexed { index, hz ->
                         VerticalFader(
                             value = spec.bandLevels.getOrElse(index) { 0 }.toFloat(),
@@ -117,39 +135,16 @@ fun EqualizerPage(
             }
         }
 
-        // ردیف‌های روشن/خاموش، همان‌هایی که طرح نشان می‌دهد
-        ToggleRow(
-            label = s.eqBass,
-            valueLabel = DspUiLogic.formatBassDb(spec.bassStrength),
-            on = spec.bassStrength > 0,
-            accent = accent,
-            onToggle = {
-                onSpecChange(
-                    spec.copy(bassStrength = if (spec.bassStrength > 0) 0 else 500)
-                )
-            }
-        )
-        ToggleRow(
-            label = s.eqReverb,
-            valueLabel = listOf(s.eqReverbOff, s.eqReverbSmall, s.eqReverbMedium, s.eqReverbLarge)
-                .getOrElse(spec.reverbPreset) { s.eqReverbOff },
-            on = spec.reverbPreset > 0,
-            accent = accent,
-            onToggle = {
-                onSpecChange(spec.copy(reverbPreset = if (spec.reverbPreset > 0) 0 else 1))
-            }
-        )
-        ToggleRow(
-            label = s.visualizer,
-            valueLabel = if (visualizerEnabled) s.eqOn else s.eqOff,
-            on = visualizerEnabled,
-            accent = accent,
-            onToggle = onToggleVisualizer
-        )
+        // ردیف‌های روشن/خاموش حذف شدند: باس و اکو کنترل کامل خود را در صفحهٔ
+        // «افکت‌ها» دارند و روشن/خاموش ویژوالایزر در صفحهٔ خودش — دو UI برای
+        // یک مقدار، کاربر را گمراه می‌کرد.
 
         // پریست‌ها — همان ۱۱ پریست سیستمی اندروید + حالت دستی
         Text(s.eqPresets, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = pal.ink)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             SelectChip(s.eqManual, spec.isManual) {
                 onSpecChange(spec.copy(preset = -1))
             }
@@ -160,7 +155,10 @@ fun EqualizerPage(
             }
         }
 
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             SelectChip(if (spec.eqEnabled) s.eqOn else s.eqOff, spec.eqEnabled) {
                 onSpecChange(spec.copy(eqEnabled = !spec.eqEnabled))
             }
@@ -170,8 +168,9 @@ fun EqualizerPage(
     }
 }
 
-private fun presetLabel(spec: DspSpec): String =
-    if (spec.isManual) "Custom" else EqPresets.DISPLAY_ORDER.getOrElse(spec.preset) { "Custom" }
+/** برچسب پریست بالای صفحه — بومی‌سازی‌شده (قبلاً "Custom" هاردکد بود). */
+private fun presetLabel(spec: DspSpec, s: com.alvand.player.i18n.Strings): String =
+    if (spec.isManual) s.eqManual else EqPresets.DISPLAY_ORDER.getOrElse(spec.preset) { s.eqManual }
 
 /** ردیف «روشن/خاموش» با مقدار سمت راست — مثل ردیف‌های طرح. */
 @Composable
@@ -276,31 +275,51 @@ private fun VerticalFader(
                 .width(34.dp)
                 .clip(RoundedCornerShape(17.dp))
                 .background(trackColor.copy(alpha = 0.35f))
+                // دابل‌کلیک = خنثی‌سازی باند — قرارداد استاندارد اکولایزر
+                .pointerInput(enabled) {
+                    if (!enabled) return@pointerInput
+                    detectTapGestures(onDoubleTap = { currentOnChange(0f) })
+                }
                 .then(
                     if (!enabled) Modifier else Modifier.draggable(
                         state = dragState,
                         orientation = Orientation.Vertical
                     )
                 ),
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.Center
         ) {
-            // پرشدن از پایین تا مقدار فعلی
+            // پرشدن از مرکز: تقویت به بالا (accent)، کاهش به پایین (track پررنگ‌تر)
+            // قبلاً ۰dB نیمه‌پر دیده می‌شد و تقویت از کاهش تشخیص‌پذیر نبود.
+            if (currentValue >= 0f) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(faderHeight * 0.5f * fraction)
+                        .align(Alignment.Center)
+                        .background(
+                            Brush.verticalGradient(listOf(accent, accent.copy(alpha = 0.6f)))
+                        )
+                )
+            } else {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(faderHeight * 0.5f * (1f - fraction))
+                        .align(Alignment.Center)
+                        .background(trackColor.copy(alpha = 0.85f))
+                )
+            }
+            // خط مرکز خنثی
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(faderHeight * fraction)
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accent, accent.copy(alpha = 0.6f))
-                        )
-                    )
+                    .height(1.dp)
+                    .background(trackColor)
             )
             // دستگیره
             Box(
                 Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = faderHeight * fraction - 7.dp)
+                    .offset(y = (faderHeight * 0.5f * (1f - 2f * fraction)))
                     .size(width = 26.dp, height = 14.dp)
                     .clip(RoundedCornerShape(7.dp))
                     .background(if (enabled) Color.White else pal.line),

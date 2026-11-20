@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -51,13 +50,15 @@ fun TopSearchBar(
     focusRequester: FocusRequester,
     onPlaySong: (Song) -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenNotifications: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val pal = LocalAP.current
     val s = LocalStrings.current
     Row(
-        modifier.fillMaxWidth(),
+        // فاصله از کادرهای کناری (سایدبار و پنل پخش) — قبلاً کاملاً چسبیده بود
+        modifier
+            .padding(start = 16.dp, end = 12.dp, top = 8.dp)
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -164,14 +165,6 @@ fun TopSearchBar(
             }
         }
         AppAvatar(onClick = onOpenSettings)
-        IconButton(onClick = onOpenNotifications) {
-            Icon(
-                Icons.Filled.Notifications,
-                contentDescription = null,
-                tint = pal.sub,
-                modifier = Modifier.size(20.dp)
-            )
-        }
     }
 }
 

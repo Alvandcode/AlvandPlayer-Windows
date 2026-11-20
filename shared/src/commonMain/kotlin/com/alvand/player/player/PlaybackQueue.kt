@@ -36,6 +36,40 @@ class PlaybackQueue(
         if (shuffle) order = order.shuffled()
     }
 
+    /** افزودن به انتهای صف — وقتی صف خالی است، همین آیتم جاری می‌شود */
+    fun append(item: PlayableItem): Int {
+        items = items + item
+        if (index < 0) index = 0
+        order = order + items.lastIndex
+        return items.lastIndex
+    }
+
+    /**
+     * حذف یک آیتم از صف.
+     * اگر آهنگ در حال پخش حذف شود، اندیس به همان جایگاه جدید می‌رود (آهنگ بعدی).
+     * @return true اگر حذف انجام شد
+     */
+    fun removeAt(removeIndex: Int): Boolean {
+        if (removeIndex !in items.indices) return false
+        val wasCurrent = removeIndex == index
+        items = items.filterIndexed { i, _ -> i != removeIndex }
+        index = when {
+            items.isEmpty() -> -1
+            removeIndex < index -> index - 1
+            wasCurrent -> index.coerceAtMost(items.lastIndex)
+            else -> index
+        }
+        order = order.filter { it != removeIndex }.map { if (it > removeIndex) it - 1 else it }
+        return true
+    }
+
+    /** پاک کردن کامل صف */
+    fun clear() {
+        items = emptyList()
+        index = -1
+        order = emptyList()
+    }
+
     fun setShuffle(enabled: Boolean) {
         if (shuffle == enabled) return
         shuffle = enabled
@@ -121,6 +155,9 @@ class PlaybackQueue(
         index = target
         return index
     }
+
+    /** آیتم یک اندیس بدون تغییر وضعیت — برای پیش‌بینیِ gapless */
+    fun peekAt(index: Int): PlayableItem? = items.getOrNull(index)
 
     /**
      * جابه‌جایی یک آیتم در صف (مرتب‌سازی دستی صف توسط کاربر).

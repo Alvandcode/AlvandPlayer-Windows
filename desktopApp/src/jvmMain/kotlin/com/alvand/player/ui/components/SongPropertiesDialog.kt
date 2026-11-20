@@ -19,8 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alvand.player.i18n.LocalStrings
 import com.alvand.player.library.SongFileInfoReader
+import com.alvand.player.library.TagWriter
 import com.alvand.player.model.Song
 import com.alvand.player.ui.components.formatTime
 import com.alvand.player.ui.theme.LocalAP
@@ -54,6 +57,7 @@ fun SongPropertiesDialog(
     onToggleFavorite: () -> Unit,
     onClose: () -> Unit,
     onJumpToTime: () -> Unit = {},
+    onEditTags: (TagWriter.Edit) -> Unit = {},
     loopA: Long? = null,
     loopB: Long? = null,
     onSetLoopA: () -> Unit = {},
@@ -74,6 +78,13 @@ fun SongPropertiesDialog(
         }
     }
     val info = infoState.value
+
+    // حالت ویرایش تگ — مقادیر از خود آهنگ پر می‌شوند؛ خالی یعنی پاک‌کردن فیلد
+    var editing by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var etitle by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(song.title) }
+    var eartist by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(song.artist) }
+    var ealbum by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(song.album) }
+    var egenre by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
 
     Box(
         modifier.fillMaxSize().background(pal.scrim.copy(alpha = 0.55f)),
@@ -129,13 +140,39 @@ fun SongPropertiesDialog(
                 }
 
                 SectionTitle(s.propsTags)
-                PropRow(s.propsTitle, song.title)
-                PropRow(s.propsArtist, song.artist.ifBlank { "—" })
-                PropRow(s.propsAlbum, song.album.ifBlank { "—" })
-                PropRow(
-                    s.propsDuration,
-                    if (song.durationMs > 0) formatTime(song.durationMs) else "—"
-                )
+                if (!editing) {
+                    PropRow(s.propsTitle, song.title)
+                    PropRow(s.propsArtist, song.artist.ifBlank { "—" })
+                    PropRow(s.propsAlbum, song.album.ifBlank { "—" })
+                    PropRow(
+                        s.propsDuration,
+                        if (song.durationMs > 0) formatTime(song.durationMs) else "—"
+                    )
+                    if (info?.exists == true && !song.isRemote) {
+                        SelectChip(s.propsEditTags, false, onClick = { editing = true })
+                    }
+                } else {
+                    TagEditField(s.propsTitle, etitle) { etitle = it }
+                    TagEditField(s.propsArtist, eartist) { eartist = it }
+                    TagEditField(s.propsAlbum, ealbum) { ealbum = it }
+                    TagEditField(s.propsGenre, egenre) { egenre = it }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SelectChip(s.propsSave, false, onClick = {
+                            onEditTags(
+                                TagWriter.Edit(
+                                    title = etitle.trim().ifBlank { "" },
+                                    artist = eartist.trim().ifBlank { "" },
+                                    album = ealbum.trim().ifBlank { "" },
+                                    genre = egenre.trim().takeIf { it.isNotBlank() }
+                                )
+                            )
+                            editing = false
+                        })
+                        SelectChip(s.close, false, onClick = {
+                            editing = false
+                        })
+                    }
+                }
 
                 SectionTitle(s.propsFile)
                 PropRow(s.propsName, info?.fileName ?: song.uri.substringAfterLast('/').substringAfterLast('\\'))
@@ -217,6 +254,35 @@ fun SongPropertiesDialog(
                 Spacer(Modifier.height(2.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun TagEditField(label: String, value: String, onChange: (String) -> Unit) {
+    val pal = LocalAP.current
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = pal.sub,
+            modifier = Modifier.width(110.dp)
+        )
+        androidx.compose.material3.TextField(
+            value = value,
+            onValueChange = onChange,
+            singleLine = true,
+            colors = androidx.compose.material3.TextFieldDefaults.colors(
+                focusedContainerColor = pal.glass,
+                unfocusedContainerColor = pal.glass,
+                focusedIndicatorColor = pal.line,
+                unfocusedIndicatorColor = pal.line,
+                cursorColor = pal.ink,
+                focusedTextColor = pal.ink,
+                unfocusedTextColor = pal.ink
+            ),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = pal.ink),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 

@@ -65,6 +65,7 @@ import com.alvand.player.ui.theme.LocalAP
 @Composable
 fun DiscoverPage(
     songs: List<Song>,
+    mostPlayed: List<Song> = emptyList(),
     onPlaySongs: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -76,6 +77,8 @@ fun DiscoverPage(
     val albums = remember(songs) { LibraryFilter.groupByAlbum(songs).reversed() }
     val fresh = remember(songs) { songs.take(12) }
     val genres = remember(songs) { LibraryFilter.groupByGenre(songs) }
+    // فال‌بک چارت وقتی تاریخچهٔ پخش خالی است: طولانی‌ترین‌ها
+    val fallbackChart = remember(songs) { songs.sortedByDescending { it.durationMs }.take(20) }
 
     Column(
         modifier
@@ -115,21 +118,23 @@ fun DiscoverPage(
                             )
                         }
                     }
-                    SectionTitle(s.newReleases)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(fresh, key = { it.id }) { song ->
-                            SongTile(song = song, onClick = { onPlaySongs(listOf(song)) })
+                    // «برای شما» = پرپخش‌ترین‌ها؛ قبلاً همان لیستِ تازه‌ها بود (تکراری)
+                    if (mostPlayed.isNotEmpty()) {
+                        SectionTitle(s.mostPlayed)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(mostPlayed, key = { "fy-${it.id}" }) { song ->
+                                SongTile(song = song, onClick = { onPlaySongs(listOf(song)) })
+                            }
                         }
                     }
                 }
 
                 DiscoverTab.CHARTS -> {
-                    // چارت واقعی = پرپخش‌ترین‌های کتابخانهٔ خودِ کاربر
-                    val longest = remember(songs) {
-                        songs.sortedByDescending { it.durationMs }.take(20)
-                    }
+                    // چارت واقعی = پرپخش‌ترین‌های کتابخانه (تاریخچهٔ واقعی پخش)
+                    // قبلاً «طولانی‌ترین» نشان داده می‌شد — برچسب با محتوا نمی‌خواند.
+                    val chart = mostPlayed.ifEmpty { fallbackChart }
                     SectionTitle(s.charts)
-                    longest.forEachIndexed { index, song ->
+                    chart.forEachIndexed { index, song ->
                         ChartRow(
                             rank = index + 1,
                             song = song,
