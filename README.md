@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="desktopApp/src/jvmMain/resources/icons/alvand-256.png" width="96" alt="Alvand Player logo" />
+
 # 🎵 Alvand Player — Windows
 
 **A beautiful, privacy-first music player for Windows — no cloud, no tracking, no compromises.**
@@ -8,6 +10,7 @@
 
 **Kotlin · Compose Multiplatform · Pure-Java Audio · Zero Telemetry**
 
+[![Build & Test](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml/badge.svg)](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue)](#-english)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
@@ -53,6 +56,14 @@ Because you deserve a player that **stays on your machine**. Alvand Player is a 
 
 Grab the latest MSI from the [**Releases**](../../releases) page, double-click, done. Or run from source:
 
+### 📸 Screenshots
+
+| Light (EN) | Dark · Ocean (FA) |
+|---|---|
+| ![Light theme](docs/screenshots/01-shell-light-en.png) | ![Dark Ocean Persian theme](docs/screenshots/04-shell-dark-ocean-fa.png) |
+| **Library — Songs (EN)** | **Library — Songs (FA, RTL)** |
+| ![Library EN](docs/screenshots/10-library-songs-en.png) | ![Library FA](docs/screenshots/11-library-songs-fa.png) |
+
 ```powershell
 .\gradlew.bat :desktopApp:run      # requires only JDK 17
 ```
@@ -97,6 +108,18 @@ WMA / Opus / ALAC decoding, SMTC (Windows volume flyout) integration, Authentico
 ### 📥 دانلود
 
 آخرین MSI را از صفحهٔ [**Releases**](../../releases) بگیرید، دابل‌کلیک کنید، تمام. یا از سورس اجرا کنید:
+
+## 📸 اسکرین‌شات‌ها
+
+<div dir="ltr" align="center">
+
+| روشن (EN) | تیره · اقیانوس (FA) |
+|---|---|
+| ![تم روشن](docs/screenshots/01-shell-light-en.png) | ![تم تیره اقیانوس](docs/screenshots/04-shell-dark-ocean-fa.png) |
+| **کتابخانه (EN)** | **کتابخانه (FA، راست‌به‌چپ)** |
+| ![کتابخانه EN](docs/screenshots/10-library-songs-en.png) | ![کتابخانه FA](docs/screenshots/11-library-songs-fa.png) |
+
+</div>
 
 ```powershell
 .\gradlew.bat :desktopApp:run      # فقط JDK 17 لازم است
