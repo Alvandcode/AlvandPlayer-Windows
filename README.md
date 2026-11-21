@@ -10,7 +10,7 @@
 
 **Kotlin · Compose Multiplatform · Pure-Java Audio · Zero Telemetry**
 
-[![Build & Test](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml/badge.svg)](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml)
+[![Build & Test](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/Alvandcode/AlvandPlayer-Windows/actions/workflows/build.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue)](#-english)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
