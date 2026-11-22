@@ -98,7 +98,7 @@ compose.desktop {
             packageName = "AlvandPlayer"
             // تنها منبعِ حقیقتِ شمارهٔ نسخه. tools/package-msi.ps1 همین را می‌خواند،
             // پس نام فایل MSI و نسخهٔ داخل آن هیچ‌وقت اختلاف پیدا نمی‌کنند.
-            packageVersion = "1.1.0"
+            packageVersion = "1.2.4"
             description = "Alvand Player"
             vendor = "Alvand"
 

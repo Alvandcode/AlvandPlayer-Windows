@@ -51,7 +51,9 @@ if ($parts.Count -gt 3) {
     Write-Warning "version truncated to 3 parts for the MSI: $Version"
 }
 if ($parts.Count -lt 3) {
-    $Version = ($Version + '.0') * (3 - $parts.Count) -join '.'
+    # نسخهٔ MSI باید ۳ جزء داشته باشد؛ با «.0» کامل می‌کنیم — بدون ترفند ضرب
+    # رشته در عدد (که در پاورشل یعنی تکرار رشته، نه جمع عددی: "1" => "1.01.0")
+    $Version = (($parts + @('0') * (3 - $parts.Count)) -join '.')
     Write-Warning "version padded to 3 parts for the MSI: $Version"
 }
 

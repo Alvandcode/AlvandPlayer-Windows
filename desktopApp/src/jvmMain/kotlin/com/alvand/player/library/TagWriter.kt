@@ -2,7 +2,9 @@ package com.alvand.player.library
 
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 /**
  * نویسندهٔ تگ — با همان jaudiotagger که خواندن را انجام می‌دهد.
@@ -14,6 +16,11 @@ import java.nio.file.Path
  *  - فایل قفل‌شده (در حال پخش روی ویندوز باز است ولی write-share اجازهٔ نوشتن
  *    می‌دهد) — اگر نوشتن شکست بخورد، Exception صادقانه بالا می‌آید تا UI
  *    پیام خطا نشان دهد، نه اینکه ساکت دروغ بگوید.
+ *  - **نوشتن اتمیک نیست ولی محافظت‌شده است:** jaudiotagger فایل را درجا
+ *    بازنویسی می‌کند (فرمت MP4/Vorbis اجازهٔ tmp+rename راحت نمی‌دهد)، پس قبل
+ *    از commit یک کپی `<نام>.alvand-bak` می‌سازیم؛ اگر وسط نوشتن کرش/برق رفت،
+ *    کاربر فایل سالم را در بکاپ دارد. بکاپ قبلی همیشه جایگزین می‌شود تا حجم
+ *    انباشته نشود.
  *  - همیشه روی Dispatchers.IO اجرا شود.
  */
 object TagWriter {
@@ -60,6 +67,14 @@ object TagWriter {
             set(FieldKey.GENRE, edit.genre)
 
             if (changed) {
+                // محافظت از فایل کاربر: قبل از بازنویسیِ درجای jaudiotagger،
+                // نسخهٔ سالم را در بکاپ نگه می‌داریم (بکاپ قبلی جایگزین می‌شود).
+                val backup = path.resolveSibling(
+                    path.fileName.toString() + ".alvand-bak"
+                )
+                runCatching {
+                    Files.copy(path, backup, StandardCopyOption.REPLACE_EXISTING)
+                }
                 // jaudiotagger فایل را کامیت می‌کند؛ خطای I/O را صادقانه بالا می‌دهیم
                 file.commit()
             }

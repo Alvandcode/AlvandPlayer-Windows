@@ -62,6 +62,7 @@ class SettingsStore(
                     ?.toBooleanStrictOrNull() ?: false,
                 visualizerEnabled = props.getProperty("visualizer_enabled")
                     ?.toBooleanStrictOrNull() ?: true,
+                windowGeom = props.getProperty("window_geom")?.takeIf { it.isNotBlank() } ?: "",
             )
         }.getOrElse { error ->
             // رفتار عمدی: فایل تنظیمات خراب یعنی برگشت به پیش‌فرض‌ها.
@@ -88,6 +89,7 @@ class SettingsStore(
             setProperty("queue_snapshot", s.queueSnapshot)
             setProperty("performance_mode", s.performanceMode.toString())
             setProperty("visualizer_enabled", s.visualizerEnabled.toString())
+            setProperty("window_geom", s.windowGeom)
             s.backgroundPath?.let { setProperty("background_uri", it) }
         }
 
@@ -156,8 +158,18 @@ class SettingsStore(
     fun setPerformanceMode(enabled: Boolean) = update { it.copy(performanceMode = enabled) }
 
     fun setVisualizerEnabled(enabled: Boolean) = update { it.copy(visualizerEnabled = enabled) }
+
+    /** ذخیرهٔ هندسهٔ پنجرهٔ اصلی: "x,y,w,h" به dp — فقط وقتی مقادیر معتبرند */
+    fun setWindowGeom(x: Float, y: Float, w: Float, h: Float) {
+        if (w < 200f || h < 200f) return
+        update { it.copy(windowGeom = "${x},${y},${w},${h}") }
+    }
     /** اسنپ‌شات صف playback — ذخیره و بازesti بین اجراها */
     fun setQueueSnapshot(snapshot: String) = update { it.copy(queueSnapshot = snapshot) }
+
+    /** پاک کردن صریح صف توسط کاربر ⇒ اسنپ‌شات هم باید پاک شود وگرنه بعد از
+     *  ری‌استارت، صف قبلی دوباره ظاهر می‌شد. */
+    fun clearQueueSnapshot() = update { it.copy(queueSnapshot = "") }
 
     fun toggleLike(id: Long) = update {
         it.copy(likedIds = if (id in it.likedIds) it.likedIds - id else it.likedIds + id)
@@ -190,6 +202,8 @@ data class AppSettings(
     val performanceMode: Boolean = false,
     /** روشن/خاموش ویژوالایزر (حلقهٔ طیف) */
     val visualizerEnabled: Boolean = true,
+    /** هندسهٔ پنجرهٔ اصلی بین اجراها: "x,y,w,h" — خالی یعنی پیش‌فرض 1040×820 وسط */
+    val windowGeom: String = "",
 ) {
     val isPersian: Boolean get() = com.alvand.player.data.AppLocale.normalize(language) == "fa"
 

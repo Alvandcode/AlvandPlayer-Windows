@@ -277,7 +277,19 @@ fun main(args: Array<String>) {
     }
 
     application {
-        val windowState = rememberWindowState(size = DpSize(1040.dp, 820.dp))
+        // هندسهٔ ذخیره‌شدهٔ پنجره (x,y,w,h به dp) — اگر نبود، پیش‌فرض ۱۰۴۰×۸۲۰ وسط
+        val savedGeom = runCatching {
+            val p = settings.current.windowGeom.split(',')
+            if (p.size == 4) p.map { it.trim().toFloatOrNull() ?: -1f } else null
+        }.getOrNull()?.takeIf { g -> g.all { it >= 0f } && g[2] >= 200f && g[3] >= 200f }
+        val windowState = if (savedGeom != null) {
+            rememberWindowState(
+                position = androidx.compose.ui.window.WindowPosition(savedGeom[0].dp, savedGeom[1].dp),
+                size = DpSize(savedGeom[2].dp, savedGeom[3].dp)
+            )
+        } else {
+            rememberWindowState(size = DpSize(1040.dp, 820.dp))
+        }
 
         if (controller.quitRequested.value) {
             engine.release()
@@ -299,6 +311,22 @@ fun main(args: Array<String>) {
             LaunchedEffect(windowState) {
                 snapshotFlow { windowState.isMinimized }
                     .collect { minimized -> controller.miniVisible.value = minimized }
+            }
+            // ذخیرهٔ هندسهٔ پنجره بین اجراها: تغییر اندازه/مکان با debounce ۸۰۰ms
+            LaunchedEffect(windowState) {
+                snapshotFlow {
+                    Triple(
+                        windowState.position.x.value,
+                        windowState.position.y.value,
+                        windowState.size.width.value
+                    ) to windowState.size.height.value
+                }
+                    .collect { (top, height) ->
+                        kotlinx.coroutines.delay(800)
+                        settings.setWindowGeom(
+                            top.first, top.second, top.third, height
+                        )
+                    }
             }
             AlvandApp(
                 settings = settings,
@@ -1004,7 +1032,12 @@ private fun AlvandApp(
                     onSelectQueueIndex = { i -> coroutineScope.launch { engine.playIndex(i) } },
                     onMoveQueueItem = { from, to -> engine.moveInQueue(from, to) },
                     onRemoveFromQueue = { i -> engine.removeFromQueue(i) },
-                    onClearQueue = { engine.clearQueue() },
+                    onClearQueue = {
+                        engine.clearQueue()
+                        // پاک کردن صریح صف باید اسنپ‌شات را هم پاک کند؛ وگرنه
+                        // بعد از ری‌استارت، صف قدیمی دوباره ظاهر می‌شد.
+                        settings.clearQueueSnapshot()
+                    },
                     onOpenLyrics = { showLyrics = true },
                     onShowProperties = { propertiesSong = currentSong() },
                     onOpenSettings = { screen = Screen.SETTINGS },

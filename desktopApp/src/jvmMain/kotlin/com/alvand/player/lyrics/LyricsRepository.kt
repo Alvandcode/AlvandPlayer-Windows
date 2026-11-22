@@ -37,7 +37,7 @@ object LrclibClient {
             requestMethod = "GET"
             connectTimeout = CONNECT_TIMEOUT_MS
             readTimeout = READ_TIMEOUT_MS
-            setRequestProperty("User-Agent", "AlvandPlayer/1.1.0")
+            setRequestProperty("User-Agent", "AlvandPlayer/1.2.4")
             setRequestProperty("Accept", "application/json")
             instanceFollowRedirects = true
         }

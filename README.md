@@ -16,7 +16,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Compose%20Multiplatform-1.12-7F52FF?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-mpp/)
 [![Tests](https://img.shields.io/badge/tests-340%2B%20passing-brightgreen)](#-build--test--ساخت-و-تست)
-[![Release](https://img.shields.io/badge/release-v1.2.3-orange)](#-download--دانلود)
+[![Release](https://img.shields.io/badge/release-v1.2.4-orange)](#-download--دانلود)
 
 </div>
 

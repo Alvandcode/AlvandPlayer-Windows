@@ -48,7 +48,6 @@ class JdkPlayerEngine(
     @Volatile
     private var pendingQueue: PendingQueue? = null
 
-    private var playbackJob: Job? = null
     private var positionJob: Job? = null
     private var pumpThread: Thread? = null
 
@@ -409,10 +408,13 @@ override suspend fun previous() {
     }
 
     override fun removeFromQueue(index: Int) {
-        val before = _state.value.index
         scope.launch {
             controlMutex.withLock {
-                if (index != before && index !in queue.items().indices) return@withLock
+                // ایندکس «فعلی» باید **داخل** قفل خوانده شود وگرنه دو حذفِ سریع
+                // پشت‌سرهم هر دو همان `before` قدیمی را می‌گیرند و ردیفِ اشتباه
+                // حذف می‌شود (باگ مسابقهٔ audit).
+                val before = _state.value.index
+                if (index !in queue.items().indices) return@withLock
                 val wasCurrent = index == before && before >= 0
                 if (!queue.removeAt(index)) return@withLock
                 if (queue.isEmpty()) {
@@ -473,7 +475,6 @@ override suspend fun previous() {
     }
 
     override fun release() {
-        playbackJob?.cancel()
         positionJob?.cancel()
         stopPumpThread()
         runCatching { decoder?.close() }
